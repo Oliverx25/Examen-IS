@@ -344,7 +344,3 @@ docker-compose logs -f frontend
 # Ver logs de la base de datos
 docker-compose logs -f db
 ```
-
----
-
-**Desarrollado con ❤️ para instituciones educativas que buscan tomar decisiones basadas en datos**
