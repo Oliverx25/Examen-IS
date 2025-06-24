@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Warehouse - Análisis de Rendimiento Académico</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>Data Warehouse Universitario</h1>
+                </div>
+                <nav class="nav">
+                    <button class="nav-btn active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                    <button class="nav-btn" data-section="analytics">
+                        <i class="fas fa-analytics"></i> Análisis
+                    </button>
+                    <button class="nav-btn" data-section="load-data">
+                        <i class="fas fa-upload"></i> Cargar Datos
+                    </button>
+                    <button class="nav-btn" data-section="dimensions">
+                        <i class="fas fa-database"></i> Dimensiones
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-tachometer-alt"></i> Dashboard General</h2>
+                    <p>Resumen estadístico del rendimiento académico</p>
+                </div>
+
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-registros">-</h3>
+                            <p>Total Registros</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-estudiantes">-</h3>
+                            <p>Total Estudiantes</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-materias">-</h3>
+                            <p>Total Materias</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-docentes">-</h3>
+                            <p>Total Docentes</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="promedio-general">-</h3>
+                            <p>Promedio General</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="tasa-aprobacion">-</h3>
+                            <p>Tasa de Aprobación (%)</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Section -->
+            <section id="analytics" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-analytics"></i> Análisis de Datos</h2>
+                    <p>Respuestas a las preguntas de negocio del Data Warehouse</p>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Tasas de Reprobación</h3>
+                        <p>Análisis por materia y carrera en los últimos semestres</p>
+                        <button class="btn btn-primary" onclick="loadTasaReprobacion()">
+                            <i class="fas fa-play"></i> Ejecutar Análisis
+                        </button>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-trophy"></i> Materias Sobresalientes</h3>
+                        <p>Asignaturas con mayor cantidad de calificaciones excelentes</p>
+                        <button class="btn btn-primary" onclick="loadMateriasSobresalientes()">
+                            <i class="fas fa-play"></i> Ejecutar Análisis
+                        </button>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h3><i class="fas fa-chart-line"></i> Evolución del Promedio</h3>
+                        <p>Tendencia por generación y programa académico</p>
+                        <button class="btn btn-primary" onclick="loadEvolucionPromedio()">
+                            <i class="fas fa-play"></i> Ejecutar Análisis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Área común para resultados de análisis -->
+                <div class="analysis-results-area" id="analysis-results-area">
+                    <div class="placeholder-message">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3>Al ejecutar un análisis, se debe de renderizar la tabla aquí</h3>
+                        <p>Selecciona uno de los análisis de arriba para ver los resultados</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Load Data Section -->
+            <section id="load-data" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-upload"></i> Cargar Nuevos Datos</h2>
+                    <p>Agregar nuevos registros de rendimiento académico al Data Warehouse</p>
+                </div>
+
+                <div class="form-container">
+                    <form id="load-data-form" class="data-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="id_estudiante">Estudiante</label>
+                                <select id="id_estudiante" name="id_estudiante" required>
+                                    <option value="">Seleccionar estudiante...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_materia">Materia</label>
+                                <select id="id_materia" name="id_materia" required>
+                                    <option value="">Seleccionar materia...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_docente">Docente</label>
+                                <select id="id_docente" name="id_docente" required>
+                                    <option value="">Seleccionar docente...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_tiempo">Periodo</label>
+                                <select id="id_tiempo" name="id_tiempo" required>
+                                    <option value="">Seleccionar periodo...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_programa">Programa</label>
+                                <select id="id_programa" name="id_programa" required>
+                                    <option value="">Seleccionar programa...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="calificacion">Calificación (0-100)</label>
+                                <input type="number" id="calificacion" name="calificacion" min="0" max="100" step="0.01" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="estatus">Estatus</label>
+                                <select id="estatus" name="estatus" required>
+                                    <option value="">Seleccionar estatus...</option>
+                                    <option value="Aprobado">Aprobado</option>
+                                    <option value="Reprobado">Reprobado</option>
+                                    <option value="Extraordinario">Extraordinario</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="creditos_obtenidos">Créditos Obtenidos</label>
+                                <input type="number" id="creditos_obtenidos" name="creditos_obtenidos" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Cargar Datos
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Dimensions Section -->
+            <section id="dimensions" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-database"></i> Gestión de Dimensiones</h2>
+                    <p>Visualizar y actualizar información de las dimensiones del Data Warehouse</p>
+                </div>
+
+                <div class="dimensions-grid">
+                    <div class="dimension-card" onclick="loadDimension('estudiante')">
+                        <div class="dimension-icon">
+                            <i class="fas fa-user-graduate"></i>
+                        </div>
+                        <h3>Estudiantes</h3>
+                        <p>Gestionar información de estudiantes</p>
+                    </div>
+
+                    <div class="dimension-card" onclick="loadDimension('materia')">
+                        <div class="dimension-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h3>Materias</h3>
+                        <p>Gestionar catálogo de materias</p>
+                    </div>
+
+                    <div class="dimension-card" onclick="loadDimension('docente')">
+                        <div class="dimension-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3>Docentes</h3>
+                        <p>Gestionar información de docentes</p>
+                    </div>
+
+                    <div class="dimension-card" onclick="loadDimension('programa')">
+                        <div class="dimension-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3>Programas</h3>
+                        <p>Gestionar programas académicos</p>
+                    </div>
+
+                    <div class="dimension-card" onclick="loadDimension('tiempo')">
+                        <div class="dimension-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h3>Periodos</h3>
+                        <p>Gestionar periodos académicos</p>
+                    </div>
+                </div>
+
+                <div class="dimension-content" id="dimension-content">
+                    <p class="text-center">Selecciona una dimensión para ver su contenido</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loading-spinner">
+        <div class="spinner"></div>
+        <p>Cargando...</p>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Modal para editar dimensiones -->
+    <div class="modal-overlay" id="edit-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">
+                    <i class="fas fa-edit"></i> Editar Registro
+                </h3>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-form">
+                    <div id="form-fields">
+                        <!-- Los campos se generarán dinámicamente -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar Cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

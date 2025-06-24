@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  db:
+    image: postgres:15
+    container_name: datawarehouse_db
+    environment:
+      POSTGRES_DB: datawarehouse
+      POSTGRES_USER: dw_user
+      POSTGRES_PASSWORD: dw_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - dw_network
+
+  # Backend Django
+  backend:
+    build: ./backend
+    container_name: datawarehouse_backend
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=django-insecure-development-key-only
+      - DATABASE_NAME=datawarehouse
+      - DATABASE_USER=dw_user
+      - DATABASE_PASSWORD=dw_password
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    networks:
+      - dw_network
+
+  # Frontend (servidor HTTP simple)
+  frontend:
+    build: ./frontend
+    container_name: datawarehouse_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    networks:
+      - dw_network
+
+volumes:
+  postgres_data:
+
+networks:
+  dw_network:
+    driver: bridge
