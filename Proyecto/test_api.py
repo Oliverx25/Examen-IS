@@ -12,7 +12,7 @@ API_BASE_URL = 'http://localhost:8000/api'
 def test_endpoint(url, description):
     """Prueba un endpoint específico"""
     try:
-        print(f"🔍 Probando: {description}")
+        print(f"   Probando: {description}")
         print(f"   URL: {url}")
 
         response = requests.get(url, timeout=10)
@@ -23,36 +23,36 @@ def test_endpoint(url, description):
 
             if isinstance(data, dict):
                 if 'results' in data:
-                    print(f"   📊 Registros encontrados: {len(data['results'])}")
+                    print(f"    Registros encontrados: {len(data['results'])}")
                 elif 'data' in data:
-                    print(f"   📊 Registros encontrados: {len(data['data'])}")
+                    print(f"    Registros encontrados: {len(data['data'])}")
                 else:
-                    print(f"   📊 Respuesta: {list(data.keys())}")
+                    print(f"    Respuesta: {list(data.keys())}")
             elif isinstance(data, list):
-                print(f"   📊 Registros encontrados: {len(data)}")
+                print(f"    Registros encontrados: {len(data)}")
 
             return True
         else:
-            print(f"   ❌ Error - Status: {response.status_code}")
-            print(f"   📝 Respuesta: {response.text[:200]}...")
+            print(f"    Error - Status: {response.status_code}")
+            print(f"    Respuesta: {response.text[:200]}...")
             return False
 
     except requests.exceptions.ConnectionError:
-        print(f"   ❌ Error de conexión - ¿Está ejecutándose el servidor?")
+        print(f"    Error de conexión - ¿Está ejecutándose el servidor?")
         return False
     except requests.exceptions.Timeout:
-        print(f"   ❌ Timeout - El servidor tardó más de 10 segundos en responder")
+        print(f"    Timeout - El servidor tardó más de 10 segundos en responder")
         return False
     except Exception as e:
-        print(f"   ❌ Error inesperado: {str(e)}")
+        print(f"    Error inesperado: {str(e)}")
         return False
 
 def main():
-    print("🚀 Iniciando pruebas de la API del Data Warehouse")
+    print(" Iniciando pruebas de la API del Data Warehouse")
     print("=" * 60)
 
     # Esperar a que el servidor esté listo
-    print("⏳ Esperando a que el servidor esté disponible...")
+    print(" Esperando a que el servidor esté disponible...")
     max_attempts = 30
     for attempt in range(max_attempts):
         try:
@@ -99,15 +99,15 @@ def main():
 
     # Resumen
     print("=" * 60)
-    print(f"📋 RESUMEN DE PRUEBAS:")
+    print(f" RESUMEN DE PRUEBAS:")
     print(f"   ✅ Pruebas exitosas: {passed}/{total}")
     print(f"   ❌ Pruebas fallidas: {total - passed}/{total}")
 
     if passed == total:
-        print("\n🎉 ¡Todas las pruebas pasaron! El Data Warehouse está funcionando correctamente.")
+        print("\n ¡Todas las pruebas pasaron! El Data Warehouse está funcionando correctamente.")
         return 0
     else:
-        print(f"\n⚠️  {total - passed} prueba(s) fallaron. Revisa la configuración.")
+        print(f"\n  {total - passed} prueba(s) fallaron. Revisa la configuración.")
         return 1
 
 if __name__ == "__main__":
