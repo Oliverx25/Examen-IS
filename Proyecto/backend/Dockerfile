@@ -29,9 +29,9 @@ COPY . /app/
 # Crear directorio para archivos estáticos
 RUN mkdir -p /app/staticfiles
 
-# Dar permisos de ejecución al script de inicialización
-# Lo movemos después de COPY para asegurar que el archivo existe
-RUN chmod +x /app/init.sh
+# Limpiar terminadores de línea Windows (\r) y dar permisos de ejecución
+RUN sed -i 's/\r$//' /app/init.sh \
+    && chmod +x /app/init.sh
 
 # Exponer puerto
 EXPOSE 8000
