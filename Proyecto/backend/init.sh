@@ -10,7 +10,7 @@ echo "Ejecutando migraciones..."
 python manage.py makemigrations
 python manage.py migrate
 
-echo "Verificando si ya existen datos..."
+echo "Verificando si ya existen suficientes datos..."
 RECORD_COUNT=$(python manage.py shell -c "
 try:
     from analytics.models import HechosRendimientoAcademico
@@ -19,8 +19,9 @@ except Exception as e:
     print('0')
 " 2>/dev/null | tail -1 | tr -d '\r\n' | grep -o '[0-9]*')
 
-if [ -z "$RECORD_COUNT" ] || [ "$RECORD_COUNT" -eq 0 ]; then
-    echo "No se encontraron datos. Poblando base de datos con 5000+ registros..."
+# Verificar si necesitamos poblar más datos (objetivo: 5000+ registros)
+if [ -z "$RECORD_COUNT" ] || [ "$RECORD_COUNT" -lt 5000 ]; then
+    echo "Se encontraron $RECORD_COUNT registros. Poblando base de datos hasta 5000+ registros..."
     python manage.py populate_data
 else
     echo "La base de datos ya contiene $RECORD_COUNT registros."
