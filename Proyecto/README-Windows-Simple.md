@@ -6,7 +6,45 @@ Si ves errores como:
 /app/init.sh: line 2: $'\r': command not found
 ```
 
-## Solución Rápida
+## 🚀 Solución Recomendada: WSL2
+
+### ¿Por qué usar WSL2?
+- ✅ **Sin problemas de terminadores de línea**
+- ✅ **Mejor rendimiento con Docker**
+- ✅ **Experiencia nativa de Linux**
+- ✅ **Acceso desde Windows con localhost**
+
+### Configuración WSL2:
+1. **Instalar WSL2:**
+   ```cmd
+   wsl --install
+   ```
+
+2. **Configurar Docker Desktop:**
+   - Settings → General → ✅ "Use the WSL 2 based engine"
+   - Settings → Resources → WSL Integration → ✅ Habilitar tu distribución
+
+3. **Clonar y ejecutar en WSL2:**
+   ```bash
+   # Abrir WSL2
+   wsl
+
+   # Clonar en WSL2 (IMPORTANTE: no en /mnt/c/)
+   cd ~
+   git clone [tu-repositorio]
+   cd tu-proyecto/Proyecto
+
+   # Ejecutar script automático
+   chmod +x setup-wsl2.sh
+   ./setup-wsl2.sh
+   ```
+
+4. **Acceder desde Windows:**
+   - Frontend: http://localhost:3000 ✅
+   - Backend: http://localhost:8000 ✅
+   - Admin: http://localhost:8000/admin ✅
+
+## 🔧 Alternativa: Solución Directa en Windows
 
 ### Opción 1: Script Automático
 ```powershell
@@ -26,15 +64,27 @@ Si ves errores como:
    docker-compose up --build -d
    ```
 
-## Cómo Funciona
+## Cómo Funciona la Solución Windows
 
-El `Dockerfile` ahora incluye esta línea que limpia automáticamente los terminadores de línea:
+El `Dockerfile` incluye esta línea que limpia automáticamente los terminadores de línea:
 ```dockerfile
 RUN sed -i 's/\r$//' /app/init.sh \
     && chmod +x /app/init.sh
 ```
 
-Esto elimina los caracteres `\r` (retorno de carro) que Windows agrega automáticamente.
+## 📁 Acceso a Archivos
+
+### Desde WSL2:
+```bash
+# Archivos en WSL2
+~/mi-proyecto/
+```
+
+### Desde Windows:
+```
+# Explorador de Windows
+\\wsl$\Ubuntu\home\usuario\mi-proyecto
+```
 
 ## URLs del Proyecto
 
@@ -42,6 +92,7 @@ Esto elimina los caracteres `\r` (retorno de carro) que Windows agrega automáti
 - Frontend: http://localhost:3000
 - Admin: http://localhost:8000/admin (admin/admin123)
 
-## Nota
+## 💡 Recomendación
 
-Esta solución funciona automáticamente cada vez que construyes la imagen Docker, sin necesidad de configuraciones adicionales.
+**Para desarrollo regular**: Usa WSL2 - es la mejor experiencia
+**Para pruebas rápidas**: Usa el script de Windows - funciona automáticamente
