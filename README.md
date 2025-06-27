@@ -131,7 +131,6 @@ Responde a tres preguntas de negocio fundamentales:
 ### 🗄️ Administración de Dimensiones
 - **Visualización** paginada de todas las dimensiones
 - **Edición** en línea de registros
-- **Búsqueda** y filtrado avanzado
 
 ### 🔧 Características Técnicas
 
