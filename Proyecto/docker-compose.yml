@@ -46,6 +46,8 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
     networks:
       - dw_network
 
