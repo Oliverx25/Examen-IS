@@ -15,6 +15,20 @@ let totalAnalysisPages = 1;
 let allAnalysisData = [];
 let currentAnalysisType = null;
 
+// Estado para hechos
+let currentHechosPage = 1;
+let totalHechosPages = 1;
+let allHechosData = [];
+
+// Estado para autocomplete
+let autocompleteData = {
+    estudiantes: [],
+    materias: [],
+    docentes: [],
+    programas: [],
+    tiempos: []
+};
+
 // Elementos del DOM
 let elements = {};
 
@@ -48,11 +62,23 @@ function initializeElements() {
         // Dimensions
         dimensionContent: document.getElementById('dimension-content'),
 
-        // Modal
+        // Hechos
+        hechosContent: document.getElementById('hechos-content'),
+
+        // Modals
         editModal: document.getElementById('edit-modal-overlay'),
         editForm: document.getElementById('edit-form'),
         modalTitle: document.getElementById('modal-title'),
-        formFields: document.getElementById('form-fields')
+        formFields: document.getElementById('form-fields'),
+
+        // Create modals
+        createDimensionModal: document.getElementById('create-dimension-modal-overlay'),
+        createDimensionForm: document.getElementById('create-dimension-form'),
+        createDimensionTitle: document.getElementById('create-dimension-modal-title'),
+        createDimensionFields: document.getElementById('create-dimension-form-fields'),
+
+        createHechoModal: document.getElementById('create-hecho-modal-overlay'),
+        createHechoForm: document.getElementById('create-hecho-form')
     };
 }
 
@@ -75,11 +101,37 @@ function setupEventListeners() {
         elements.editForm.addEventListener('submit', handleEditSubmit);
     }
 
-    // Cerrar modal al hacer clic fuera
+    // Formulario de crear dimensión
+    if (elements.createDimensionForm) {
+        elements.createDimensionForm.addEventListener('submit', handleCreateDimensionSubmit);
+    }
+
+    // Formulario de crear hecho
+    if (elements.createHechoForm) {
+        elements.createHechoForm.addEventListener('submit', handleCreateHechoSubmit);
+    }
+
+    // Cerrar modales al hacer clic fuera
     if (elements.editModal) {
         elements.editModal.addEventListener('click', (e) => {
             if (e.target === elements.editModal) {
                 closeEditModal();
+            }
+        });
+    }
+
+    if (elements.createDimensionModal) {
+        elements.createDimensionModal.addEventListener('click', (e) => {
+            if (e.target === elements.createDimensionModal) {
+                closeCreateDimensionModal();
+            }
+        });
+    }
+
+    if (elements.createHechoModal) {
+        elements.createHechoModal.addEventListener('click', (e) => {
+            if (e.target === elements.createHechoModal) {
+                closeCreateHechoModal();
             }
         });
     }
@@ -103,6 +155,8 @@ function showSection(sectionName) {
         loadDashboardData();
     } else if (sectionName === 'load-data') {
         loadFormData();
+    } else if (sectionName === 'hechos') {
+        loadHechosData();
     }
 }
 
@@ -206,7 +260,7 @@ async function loadEvolucionPromedio(page = 1) {
             allAnalysisData = data.data || [];
             totalAnalysisPages = Math.ceil(allAnalysisData.length / 10); // 10 registros por página
 
-            displayAnalysisResults(allAnalysisData, 'Evolución del Promedio por Programa', page);
+            displayAnalysisResults(allAnalysisData, 'Evolución del Promedio General', page);
             showToast('Análisis de evolución completado', 'success');
         } else {
             throw new Error('Error en la respuesta del servidor');
@@ -221,121 +275,101 @@ async function loadEvolucionPromedio(page = 1) {
 }
 
 function displayAnalysisResults(data, title, page) {
-    const container = document.getElementById('analysis-results-area');
-    if (!container) return;
+    const resultsArea = document.getElementById('analysis-results-area');
+    const startIndex = (page - 1) * 10;
+    const endIndex = startIndex + 10;
+    const pageData = data.slice(startIndex, endIndex);
 
-    if (!data || data.length === 0) {
-        container.innerHTML = `
-            <div class="analysis-content">
-                <h4><i class="fas fa-chart-line"></i> ${title}</h4>
-                <div class="text-center text-muted">
-                    <p>No se encontraron datos para mostrar</p>
-                </div>
+    if (pageData.length === 0) {
+        resultsArea.innerHTML = `
+            <div class="placeholder-message">
+                <i class="fas fa-chart-bar"></i>
+                <h3>No hay datos para mostrar</h3>
+                <p>No se encontraron resultados para este análisis</p>
             </div>
         `;
         return;
     }
 
-    const startIndex = (page - 1) * 10;
-    const endIndex = startIndex + 10;
-    const pageData = data.slice(startIndex, endIndex);
-
     const table = createAnalysisTable(pageData, data.length, page);
-    container.innerHTML = `
+    resultsArea.innerHTML = `
         <div class="analysis-content">
-            <h4><i class="fas fa-chart-line"></i> ${title}</h4>
+            <h4><i class="fas fa-chart-bar"></i> ${title}</h4>
             ${table}
         </div>
     `;
 }
 
 function createAnalysisTable(data, totalRecords, page) {
-    if (!data || data.length === 0) return '<p>No hay datos disponibles</p>';
+    if (data.length === 0) return '<p>No hay datos para mostrar</p>';
 
     const headers = Object.keys(data[0]);
+    const headerRow = headers.map(header => `<th>${formatHeader(header)}</th>`).join('');
+    const dataRows = data.map(row => {
+        const cells = headers.map(header => `<td>${formatCellValue(row[header])}</td>`);
+        return `<tr>${cells.join('')}</tr>`;
+    }).join('');
 
-    const tableHTML = `
-        <div class="results-container">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        ${headers.map(header => `<th>${formatHeader(header)}</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map(row => `
-                        <tr>
-                            ${headers.map(header => `<td>${formatCellValue(row[header])}</td>`).join('')}
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-            ${totalRecords > 10 ? `<p class="text-muted text-center">Mostrando 10 de ${totalRecords} registros</p>` : ''}
-        </div>
-    `;
+    const pagination = generateAnalysisPageNumbers(page, totalAnalysisPages);
 
-    // Agregar controles de paginación si hay más de una página
-    const paginationHTML = totalAnalysisPages > 1 ? `
+    return `
         <div class="pagination-container">
             <div class="pagination-info">
-                <p class="text-muted">Página ${page} de ${totalAnalysisPages}</p>
+                <p>Mostrando ${((page - 1) * 10) + 1} a ${Math.min(page * 10, totalRecords)} de ${totalRecords} registros</p>
             </div>
-            <div class="pagination-controls">
-                <button class="btn btn-secondary" onclick="loadAnalysis('${currentAnalysisType}', ${page - 1})" ${page <= 1 ? 'disabled' : ''}>
-                    <i class="fas fa-chevron-left"></i> Anterior
-                </button>
-                <span class="pagination-numbers">
-                    ${generateAnalysisPageNumbers(page, totalAnalysisPages)}
-                </span>
-                <button class="btn btn-secondary" onclick="loadAnalysis('${currentAnalysisType}', ${page + 1})" ${page >= totalAnalysisPages ? 'disabled' : ''}>
-                    Siguiente <i class="fas fa-chevron-right"></i>
-                </button>
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>${headerRow}</tr>
+                    </thead>
+                    <tbody>${dataRows}</tbody>
+                </table>
             </div>
+            ${pagination}
         </div>
-    ` : '';
-
-    return tableHTML + paginationHTML;
+    `;
 }
 
 function generateAnalysisPageNumbers(currentPage, totalPages) {
-    let pageNumbers = '';
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (totalPages <= 1) return '';
 
-    // Ajustar startPage si estamos cerca del final
-    if (endPage - startPage < maxVisiblePages - 1) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+    let paginationHTML = '<div class="pagination-controls">';
+    paginationHTML += '<div class="pagination-numbers">';
 
-    // Agregar primera página si no está visible
+    // Botón anterior
+    paginationHTML += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
     if (startPage > 1) {
-        pageNumbers += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', 1)">1</button>`;
-        if (startPage > 2) {
-            pageNumbers += '<span class="pagination-dots">...</span>';
-        }
+        paginationHTML += '<span class="pagination-dots">...</span>';
     }
 
-    // Agregar páginas visibles
     for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage ? 'active' : '';
-        pageNumbers += `<button class="pagination-btn ${isActive}" onclick="loadAnalysis('${currentAnalysisType}', ${i})">${i}</button>`;
+        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadAnalysis('${currentAnalysisType}', ${i})">${i}</button>`;
     }
 
-    // Agregar última página si no está visible
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            pageNumbers += '<span class="pagination-dots">...</span>';
-        }
-        pageNumbers += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', ${totalPages})">${totalPages}</button>`;
+        paginationHTML += '<span class="pagination-dots">...</span>';
     }
 
-    return pageNumbers;
+    // Botón siguiente
+    paginationHTML += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    paginationHTML += '</div></div>';
+    return paginationHTML;
 }
 
-// Función helper para cargar análisis
 function loadAnalysis(analysisType, page) {
-    switch(analysisType) {
+    if (page < 1 || page > totalAnalysisPages) return;
+
+    switch (analysisType) {
         case 'tasa-reprobacion':
             loadTasaReprobacion(page);
             break;
@@ -349,72 +383,193 @@ function loadAnalysis(analysisType, page) {
 }
 
 function formatHeader(header) {
-    const headerMap = {
-        'nombre_materia': 'Materia',
-        'departamento': 'Departamento',
-        'nombre_programa': 'Programa',
-        'periodo': 'Periodo',
-        'total_evaluaciones': 'Total Evaluaciones',
-        'reprobados': 'Reprobados',
-        'tasa_reprobacion': 'Tasa Reprobación (%)',
-        'total_estudiantes': 'Total Estudiantes',
-        'estudiantes_sobresalientes': 'Estudiantes Sobresalientes',
-        'porcentaje_sobresalientes': 'Porcentaje Sobresalientes (%)',
-        'promedio_materia': 'Promedio Materia',
-        'anio': 'Año',
-        'promedio_general': 'Promedio General',
-        'nivel': 'Nivel',
-        'total_evaluaciones': 'Total Evaluaciones'
-    };
-    return headerMap[header] || header.charAt(0).toUpperCase() + header.slice(1).replace('_', ' ');
+    return header
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 function formatCellValue(value) {
-    if (typeof value === 'number' && value % 1 !== 0) {
-        return value.toFixed(2);
-    }
-    return value;
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'number') return value.toLocaleString();
+    return value.toString();
 }
 
 // FUNCIONES DE CARGA DE DATOS
 async function loadFormData() {
     try {
-        // Cargar datos para los selects del formulario
-        const [estudiantes, materias, docentes, tiempos, programas] = await Promise.all([
+        showLoading(true);
+
+        // Cargar datos para los autocompletes
+        const [estudiantes, materias, docentes, programas, tiempos] = await Promise.all([
             fetch(`${API_BASE_URL}/dimension/estudiante/`).then(r => r.json()),
             fetch(`${API_BASE_URL}/dimension/materia/`).then(r => r.json()),
             fetch(`${API_BASE_URL}/dimension/docente/`).then(r => r.json()),
-            fetch(`${API_BASE_URL}/dimension/tiempo/`).then(r => r.json()),
-            fetch(`${API_BASE_URL}/dimension/programa/`).then(r => r.json())
+            fetch(`${API_BASE_URL}/dimension/programa/`).then(r => r.json()),
+            fetch(`${API_BASE_URL}/dimension/tiempo/`).then(r => r.json())
         ]);
 
-        populateSelect('id_estudiante', estudiantes.results || estudiantes, 'id_estudiante', 'nombre');
-        populateSelect('id_materia', materias.results || materias, 'id_materia', 'nombre_materia');
-        populateSelect('id_docente', docentes.results || docentes, 'id_docente', 'nombre_docente');
-        populateSelect('id_tiempo', tiempos.results || tiempos, 'id_tiempo', 'descripcion');
-        populateSelect('id_programa', programas.results || programas, 'id_programa', 'nombre_programa');
+        // Guardar datos en el estado global
+        autocompleteData.estudiantes = estudiantes.results || estudiantes;
+        autocompleteData.materias = materias.results || materias;
+        autocompleteData.docentes = docentes.results || docentes;
+        autocompleteData.programas = programas.results || programas;
+        autocompleteData.tiempos = tiempos.results || tiempos;
+
+        // Configurar autocompletes del formulario principal
+        setupAutocomplete('id_estudiante', autocompleteData.estudiantes, 'id_estudiante', 'nombre');
+        setupAutocomplete('id_materia', autocompleteData.materias, 'id_materia', 'nombre_materia');
+        setupAutocomplete('id_docente', autocompleteData.docentes, 'id_docente', 'nombre_docente');
+        setupAutocomplete('id_programa', autocompleteData.programas, 'id_programa', 'nombre_programa');
+        setupAutocomplete('id_tiempo', autocompleteData.tiempos, 'id_tiempo', 'periodo');
 
     } catch (error) {
         console.error('Error loading form data:', error);
         showToast('Error al cargar datos del formulario', 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
-function populateSelect(selectId, data, valueField, textField) {
-    const select = document.getElementById(selectId);
-    if (!select || !data) return;
+async function loadHechoModalData() {
+    try {
+        // Si ya tenemos los datos, no necesitamos volver a cargarlos
+        if (autocompleteData.estudiantes.length === 0) {
+            // Cargar datos para los autocompletes del modal de hechos
+            const [estudiantes, materias, docentes, programas, tiempos] = await Promise.all([
+                fetch(`${API_BASE_URL}/dimension/estudiante/`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/dimension/materia/`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/dimension/docente/`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/dimension/programa/`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/dimension/tiempo/`).then(r => r.json())
+            ]);
 
-    // Limpiar opciones existentes excepto la primera
-    while (select.children.length > 1) {
-        select.removeChild(select.lastChild);
+            // Guardar datos en el estado global
+            autocompleteData.estudiantes = estudiantes.results || estudiantes;
+            autocompleteData.materias = materias.results || materias;
+            autocompleteData.docentes = docentes.results || docentes;
+            autocompleteData.programas = programas.results || programas;
+            autocompleteData.tiempos = tiempos.results || tiempos;
+        }
+
+        // Configurar autocompletes del modal de hechos (con prefijo create_)
+        setupAutocomplete('create_id_estudiante', autocompleteData.estudiantes, 'id_estudiante', 'nombre');
+        setupAutocomplete('create_id_materia', autocompleteData.materias, 'id_materia', 'nombre_materia');
+        setupAutocomplete('create_id_docente', autocompleteData.docentes, 'id_docente', 'nombre_docente');
+        setupAutocomplete('create_id_programa', autocompleteData.programas, 'id_programa', 'nombre_programa');
+        setupAutocomplete('create_id_tiempo', autocompleteData.tiempos, 'id_tiempo', 'periodo');
+
+    } catch (error) {
+        console.error('Error loading hecho modal data:', error);
+        showToast('Error al cargar datos del modal', 'error');
+    }
+}
+
+// FUNCIONES DE AUTOCOMPLETE
+function setupAutocomplete(fieldId, data, valueField, textField) {
+    const searchInput = document.getElementById(fieldId + '_search');
+    const hiddenInput = document.getElementById(fieldId);
+    const dropdown = document.getElementById(fieldId + '_dropdown');
+
+    if (!searchInput || !hiddenInput || !dropdown) return;
+
+    let selectedIndex = -1;
+    let filteredData = [];
+
+    // Evento de entrada de texto
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+
+        if (query.length === 0) {
+            hideDropdown();
+            hiddenInput.value = '';
+            return;
+        }
+
+        // Filtrar datos
+        filteredData = data.filter(item =>
+            item[textField].toLowerCase().includes(query)
+        );
+
+        showDropdown(filteredData, valueField, textField);
+        selectedIndex = -1;
+    });
+
+    // Evento de teclas
+    searchInput.addEventListener('keydown', function(e) {
+        const options = dropdown.querySelectorAll('.autocomplete-option:not(.no-results)');
+
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+                updateSelection(options);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection(options);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && options[selectedIndex]) {
+                    selectOption(options[selectedIndex]);
+                }
+                break;
+            case 'Escape':
+                hideDropdown();
+                break;
+        }
+    });
+
+    // Evento de pérdida de foco
+    searchInput.addEventListener('blur', function() {
+        // Delay para permitir clics en las opciones
+        setTimeout(() => {
+            hideDropdown();
+        }, 200);
+    });
+
+    function showDropdown(items, valueField, textField) {
+        dropdown.innerHTML = '';
+
+        if (items.length === 0) {
+            dropdown.innerHTML = '<div class="autocomplete-option no-results">No se encontraron resultados</div>';
+        } else {
+            items.forEach(item => {
+                const option = document.createElement('div');
+                option.className = 'autocomplete-option';
+                option.textContent = item[textField];
+                option.dataset.value = item[valueField];
+                option.dataset.text = item[textField];
+
+                option.addEventListener('click', function() {
+                    selectOption(this);
+                });
+
+                dropdown.appendChild(option);
+            });
+        }
+
+        dropdown.classList.add('show');
     }
 
-    data.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item[valueField];
-        option.textContent = item[textField];
-        select.appendChild(option);
-    });
+    function hideDropdown() {
+        dropdown.classList.remove('show');
+        selectedIndex = -1;
+    }
+
+    function updateSelection(options) {
+        options.forEach((option, index) => {
+            option.classList.toggle('selected', index === selectedIndex);
+        });
+    }
+
+    function selectOption(option) {
+        searchInput.value = option.dataset.text;
+        hiddenInput.value = option.dataset.value;
+        hideDropdown();
+    }
 }
 
 async function handleDataSubmit(event) {
@@ -424,42 +579,29 @@ async function handleDataSubmit(event) {
         showLoading(true);
 
         const formData = new FormData(event.target);
-        const data = Object.fromEntries(formData);
-
-        // Convertir strings a números donde sea necesario
-        data.id_estudiante = parseInt(data.id_estudiante);
-        data.id_materia = parseInt(data.id_materia);
-        data.id_docente = parseInt(data.id_docente);
-        data.id_tiempo = parseInt(data.id_tiempo);
-        data.id_programa = parseInt(data.id_programa);
-        data.calificacion = parseFloat(data.calificacion);
-        data.creditos_obtenidos = parseInt(data.creditos_obtenidos);
+        const data = Object.fromEntries(formData.entries());
 
         const response = await fetch(`${API_BASE_URL}/load-data/`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify(data)
         });
 
+        const result = await response.json();
+
         if (response.ok) {
-            const result = await response.json();
             showToast('Datos cargados exitosamente', 'success');
             event.target.reset();
-
-            // Actualizar dashboard si estamos en esa sección
-            if (currentSection === 'dashboard') {
-                setTimeout(() => loadDashboardData(), 1000);
-            }
+            loadDashboardData(); // Actualizar dashboard
         } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error en la respuesta del servidor');
+            throw new Error(result.error || 'Error al cargar datos');
         }
 
     } catch (error) {
         console.error('Error submitting data:', error);
-        showToast(`Error al cargar datos: ${error.message}`, 'error');
+        showToast(error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -469,150 +611,125 @@ async function handleDataSubmit(event) {
 async function loadDimension(dimensionName, page = 1) {
     try {
         showLoading(true);
+        currentDimensionName = dimensionName;
         currentPage = page;
 
         const response = await fetch(`${API_BASE_URL}/dimension/${dimensionName}/?page=${page}`);
         const data = await response.json();
 
         if (response.ok) {
-            // Actualizar información de paginación
             allDimensionData = data.results || data;
-
-            if (data.count) {
-                totalPages = Math.ceil(data.count / 20); // 20 es el page_size
-            } else {
-                totalPages = 1;
-            }
+            totalPages = Math.ceil((data.count || allDimensionData.length) / 20);
 
             displayDimension(dimensionName, allDimensionData, data.count || allDimensionData.length, page);
+            showToast(`${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)} cargados correctamente`, 'success');
         } else {
-            throw new Error('Error al cargar dimensión');
+            throw new Error('Error en la respuesta del servidor');
         }
 
     } catch (error) {
         console.error('Error loading dimension:', error);
-        showToast('Error al cargar la dimensión', 'error');
+        showToast('Error al cargar dimensiones', 'error');
     } finally {
         showLoading(false);
     }
 }
 
 function displayDimension(dimensionName, data, totalRecords, page) {
-    if (!elements.dimensionContent) return;
+    const dimensionContent = document.getElementById('dimension-content');
+    const table = createDimensionTable(data, page);
 
-    // Guardar el nombre de la dimensión actual
-    currentDimensionName = dimensionName;
-
-    const dimensionTitles = {
-        'estudiante': 'Dimensión: Estudiantes',
-        'materia': 'Dimensión: Materias',
-        'docente': 'Dimensión: Docentes',
-        'programa': 'Dimensión: Programas',
-        'tiempo': 'Dimensión: Periodos de Tiempo'
-    };
-
-    const title = dimensionTitles[dimensionName] || 'Dimensión';
-
-    elements.dimensionContent.innerHTML = `
-        <h3><i class="fas fa-table"></i> ${title}</h3>
-        <p class="text-muted">Total de registros: ${totalRecords}</p>
-        ${createDimensionTable(data, page)}
+    dimensionContent.innerHTML = `
+        <div class="dimension-header">
+            <h3>${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)}</h3>
+            <p>Total: ${totalRecords} registros</p>
+        </div>
+        ${table}
     `;
 }
 
 function createDimensionTable(data, page) {
-    if (!data || data.length === 0) {
-        return '<p class="text-muted">No hay datos disponibles</p>';
+    if (data.length === 0) {
+        return '<p class="text-center">No hay datos para mostrar</p>';
     }
 
-    const headers = Object.keys(data[0]).filter(key => !key.includes('created_at'));
-    const idField = getIdField(currentDimensionName);
+    const headers = Object.keys(data[0]).filter(key => key !== 'created_at');
+    const headerRow = headers.map(header => `<th>${formatHeader(header)}</th>`).join('');
 
-    const tableHTML = `
-        <div class="results-container">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        ${headers.map(header => `<th>${formatHeader(header)}</th>`).join('')}
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.map(row => `
-                        <tr>
-                            ${headers.map(header => `<td>${row[header] || '-'}</td>`).join('')}
-                            <td>
-                                <button class="edit-btn" onclick="openEditModal('${currentDimensionName}', ${row[idField]})">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
+    const dataRows = data.map(row => {
+        const cells = headers.map(header => `<td>${formatCellValue(row[header])}</td>`);
+        const idField = getIdField(currentDimensionName);
+        const idValue = row[idField];
 
-    // Agregar controles de paginación si hay más de una página
-    const paginationHTML = totalPages > 1 ? `
+        cells.push(`
+            <td>
+                <button class="edit-btn" onclick="openEditModal('${currentDimensionName}', ${idValue})">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="delete-btn" onclick="deleteDimension('${currentDimensionName}', ${idValue})">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </td>
+        `);
+
+        return `<tr>${cells.join('')}</tr>`;
+    }).join('');
+
+    const pagination = generatePageNumbers(page, totalPages);
+
+    return `
         <div class="pagination-container">
             <div class="pagination-info">
-                <p class="text-muted">Página ${page} de ${totalPages}</p>
+                <p>Mostrando ${((page - 1) * 20) + 1} a ${Math.min(page * 20, data.length)} de ${data.length} registros</p>
             </div>
-            <div class="pagination-controls">
-                <button class="btn btn-secondary" onclick="loadDimension('${currentDimensionName}', ${page - 1})" ${page <= 1 ? 'disabled' : ''}>
-                    <i class="fas fa-chevron-left"></i> Anterior
-                </button>
-                <span class="pagination-numbers">
-                    ${generatePageNumbers(page, totalPages)}
-                </span>
-                <button class="btn btn-secondary" onclick="loadDimension('${currentDimensionName}', ${page + 1})" ${page >= totalPages ? 'disabled' : ''}>
-                    Siguiente <i class="fas fa-chevron-right"></i>
-                </button>
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>${headerRow}<th>Acciones</th></tr>
+                    </thead>
+                    <tbody>${dataRows}</tbody>
+                </table>
             </div>
+            ${pagination}
         </div>
-    ` : '';
-
-    return tableHTML + paginationHTML;
+    `;
 }
 
 function generatePageNumbers(currentPage, totalPages) {
-    let pageNumbers = '';
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    if (totalPages <= 1) return '';
 
-    // Ajustar startPage si estamos cerca del final
-    if (endPage - startPage < maxVisiblePages - 1) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
+    let paginationHTML = '<div class="pagination-controls">';
+    paginationHTML += '<div class="pagination-numbers">';
 
-    // Agregar primera página si no está visible
+    // Botón anterior
+    paginationHTML += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
     if (startPage > 1) {
-        pageNumbers += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', 1)">1</button>`;
-        if (startPage > 2) {
-            pageNumbers += '<span class="pagination-dots">...</span>';
-        }
+        paginationHTML += '<span class="pagination-dots">...</span>';
     }
 
-    // Agregar páginas visibles
     for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage ? 'active' : '';
-        pageNumbers += `<button class="pagination-btn ${isActive}" onclick="loadDimension('${currentDimensionName}', ${i})">${i}</button>`;
+        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadDimension('${currentDimensionName}', ${i})">${i}</button>`;
     }
 
-    // Agregar última página si no está visible
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            pageNumbers += '<span class="pagination-dots">...</span>';
-        }
-        pageNumbers += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', ${totalPages})">${totalPages}</button>`;
+        paginationHTML += '<span class="pagination-dots">...</span>';
     }
 
-    return pageNumbers;
-}
+    // Botón siguiente
+    paginationHTML += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
 
-// FUNCIONES DE EDICIÓN DE DIMENSIONES
+    paginationHTML += '</div></div>';
+    return paginationHTML;
+}
 
 function getIdField(dimensionName) {
     const idFields = {
@@ -622,118 +739,150 @@ function getIdField(dimensionName) {
         'programa': 'id_programa',
         'tiempo': 'id_tiempo'
     };
-    return idFields[dimensionName] || 'id';
+    return idFields[dimensionName];
 }
 
 function getFieldConfig(dimensionName) {
     const configs = {
-        'estudiante': [
-            { field: 'nombre', label: 'Nombre Completo', type: 'text', required: true },
-            { field: 'genero', label: 'Género', type: 'select', options: ['Masculino', 'Femenino'], required: true },
-            { field: 'programa_academico', label: 'Programa Académico', type: 'text', required: true },
-            { field: 'semestre_ingreso', label: 'Semestre de Ingreso', type: 'text', required: true },
-            { field: 'fecha_nacimiento', label: 'Fecha de Nacimiento', type: 'date', required: false }
-        ],
-        'materia': [
-            { field: 'nombre_materia', label: 'Nombre de la Materia', type: 'text', required: true },
-            { field: 'creditos', label: 'Créditos', type: 'number', required: true },
-            { field: 'departamento', label: 'Departamento', type: 'text', required: true },
-            { field: 'nivel', label: 'Nivel', type: 'select', options: ['Básico', 'Intermedio', 'Avanzado'], required: true }
-        ],
-        'docente': [
-            { field: 'nombre_docente', label: 'Nombre del Docente', type: 'text', required: true },
-            { field: 'grado_academico', label: 'Grado Académico', type: 'select', options: ['Licenciatura', 'Maestría', 'PhD', 'Doctorado'], required: true },
-            { field: 'departamento_asignado', label: 'Departamento', type: 'text', required: true },
-            { field: 'email', label: 'Email', type: 'email', required: false }
-        ],
-        'programa': [
-            { field: 'nombre_programa', label: 'Nombre del Programa', type: 'text', required: true },
-            { field: 'nivel', label: 'Nivel', type: 'select', options: ['Pregrado', 'Postgrado', 'Especialización'], required: true },
-            { field: 'coordinador', label: 'Coordinador', type: 'text', required: false },
-            { field: 'facultad', label: 'Facultad', type: 'text', required: false }
-        ]
+        'estudiante': {
+            fields: ['nombre', 'genero', 'programa_academico', 'semestre_ingreso', 'fecha_nacimiento'],
+            labels: ['Nombre', 'Género', 'Programa Académico', 'Semestre de Ingreso', 'Fecha de Nacimiento'],
+            types: ['text', 'text', 'text', 'text', 'date']
+        },
+        'materia': {
+            fields: ['nombre_materia', 'creditos', 'departamento', 'nivel'],
+            labels: ['Nombre de la Materia', 'Créditos', 'Departamento', 'Nivel'],
+            types: ['text', 'number', 'text', 'text']
+        },
+        'docente': {
+            fields: ['nombre_docente', 'grado_academico', 'departamento_asignado', 'email'],
+            labels: ['Nombre del Docente', 'Grado Académico', 'Departamento Asignado', 'Email'],
+            types: ['text', 'text', 'text', 'email']
+        },
+        'programa': {
+            fields: ['nombre_programa', 'nivel', 'coordinador', 'facultad'],
+            labels: ['Nombre del Programa', 'Nivel', 'Coordinador', 'Facultad'],
+            types: ['text', 'text', 'text', 'text']
+        },
+        'tiempo': {
+            fields: ['anio', 'periodo', 'mes_inicio', 'mes_fin', 'descripcion'],
+            labels: ['Año', 'Periodo', 'Mes de Inicio', 'Mes de Fin', 'Descripción'],
+            types: ['number', 'text', 'number', 'number', 'text']
+        }
     };
-    return configs[dimensionName] || [];
+    return configs[dimensionName];
 }
 
-async function openEditModal(dimensionName, recordId) {
+// FUNCIONES DE CRUD PARA DIMENSIONES
+
+// CREATE
+function openCreateDimensionModal(dimensionName) {
+    currentDimensionName = dimensionName;
+    const config = getFieldConfig(dimensionName);
+
+    elements.createDimensionTitle.innerHTML = `<i class="fas fa-plus"></i> Crear Nuevo ${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)}`;
+
+    const fieldsHTML = config.fields.map((field, index) => {
+        const required = field !== 'email' && field !== 'descripcion' && field !== 'coordinador' && field !== 'facultad' ? 'required' : '';
+        return `
+            <div class="form-group">
+                <label for="create_${field}">${config.labels[index]}</label>
+                <input type="${config.types[index]}" id="create_${field}" name="${field}" ${required}>
+            </div>
+        `;
+    }).join('');
+
+    elements.createDimensionFields.innerHTML = fieldsHTML;
+    elements.createDimensionModal.classList.add('show');
+}
+
+async function handleCreateDimensionSubmit(event) {
+    event.preventDefault();
+
     try {
         showLoading(true);
 
-        // Obtener el registro específico
-        const response = await fetch(`${API_BASE_URL}/dimension/${dimensionName}/${recordId}/`);
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
 
-        if (!response.ok) {
-            throw new Error('Error al obtener el registro');
+        // Convertir campos numéricos
+        const config = getFieldConfig(currentDimensionName);
+        config.fields.forEach((field, index) => {
+            if (config.types[index] === 'number') {
+                data[field] = parseInt(data[field]) || 0;
+            }
+        });
+
+        const response = await fetch(`${API_BASE_URL}/dimension/${currentDimensionName}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast(`${currentDimensionName.charAt(0).toUpperCase() + currentDimensionName.slice(1)} creado exitosamente`, 'success');
+            closeCreateDimensionModal();
+            loadDimension(currentDimensionName, 1); // Recargar la lista
+            loadFormData(); // Actualizar formularios
+        } else {
+            throw new Error(result.error || 'Error al crear el registro');
         }
 
-        const record = await response.json();
-        currentEditData = record;
-        currentDimensionName = dimensionName;
-
-        // Configurar el modal
-        const dimensionTitles = {
-            'estudiante': 'Estudiante',
-            'materia': 'Materia',
-            'docente': 'Docente',
-            'programa': 'Programa'
-        };
-
-        elements.modalTitle.innerHTML = `
-            <i class="fas fa-edit"></i> Editar ${dimensionTitles[dimensionName]}
-        `;
-
-        // Generar campos del formulario
-        generateFormFields(dimensionName, record);
-
-        // Mostrar modal
-        elements.editModal.classList.add('show');
-
     } catch (error) {
-        console.error('Error opening edit modal:', error);
-        showToast('Error al abrir el formulario de edición', 'error');
+        console.error('Error creating dimension:', error);
+        showToast(error.message, 'error');
     } finally {
         showLoading(false);
     }
 }
 
-function generateFormFields(dimensionName, record) {
-    const fieldConfig = getFieldConfig(dimensionName);
+function closeCreateDimensionModal() {
+    elements.createDimensionModal.classList.remove('show');
+    elements.createDimensionForm.reset();
+}
 
-    let fieldsHTML = '';
+// UPDATE
+async function openEditModal(dimensionName, recordId) {
+    try {
+        showLoading(true);
+        currentDimensionName = dimensionName;
+        currentEditData = { id: recordId };
 
-    fieldConfig.forEach(config => {
-        const value = record[config.field] || '';
+        const response = await fetch(`${API_BASE_URL}/dimension/${dimensionName}/${recordId}/`);
+        const data = await response.json();
 
-        fieldsHTML += `
-            <div class="form-group">
-                <label for="${config.field}">${config.label}${config.required ? ' *' : ''}</label>
-        `;
+        if (response.ok) {
+            const config = getFieldConfig(dimensionName);
 
-        if (config.type === 'select') {
-            fieldsHTML += `
-                <select id="${config.field}" name="${config.field}" ${config.required ? 'required' : ''}>
-                    ${config.options.map(option =>
-                        `<option value="${option}" ${value === option ? 'selected' : ''}>${option}</option>`
-                    ).join('')}
-                </select>
-            `;
+            elements.modalTitle.innerHTML = `<i class="fas fa-edit"></i> Editar ${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)}`;
+
+            const fieldsHTML = config.fields.map((field, index) => {
+                const value = data[field] || '';
+                const required = field !== 'email' && field !== 'descripcion' && field !== 'coordinador' && field !== 'facultad' ? 'required' : '';
+                return `
+                    <div class="form-group">
+                        <label for="edit_${field}">${config.labels[index]}</label>
+                        <input type="${config.types[index]}" id="edit_${field}" name="${field}" value="${value}" ${required}>
+                    </div>
+                `;
+            }).join('');
+
+            elements.formFields.innerHTML = fieldsHTML;
+            elements.editModal.classList.add('show');
         } else {
-            fieldsHTML += `
-                <input
-                    type="${config.type}"
-                    id="${config.field}"
-                    name="${config.field}"
-                    value="${value}"
-                    ${config.required ? 'required' : ''}
-                >
-            `;
+            throw new Error('Error al cargar datos para editar');
         }
 
-        fieldsHTML += '</div>';
-    });
-
-    elements.formFields.innerHTML = fieldsHTML;
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        showToast('Error al cargar datos para editar', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 async function handleEditSubmit(event) {
@@ -742,50 +891,39 @@ async function handleEditSubmit(event) {
     try {
         showLoading(true);
 
-        // Recopilar datos del formulario
-        const formData = new FormData(elements.editForm);
-        const updateData = {};
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
 
-        for (const [key, value] of formData.entries()) {
-            updateData[key] = value;
-        }
+        // Convertir campos numéricos
+        const config = getFieldConfig(currentDimensionName);
+        config.fields.forEach((field, index) => {
+            if (config.types[index] === 'number') {
+                data[field] = parseInt(data[field]) || 0;
+            }
+        });
 
-        // Obtener ID del registro
-        const idField = getIdField(currentDimensionName);
-        const recordId = currentEditData[idField];
-
-        // Guardar el nombre de la dimensión antes de cerrar el modal
-        const dimensionToReload = currentDimensionName;
-        const pageToReload = currentPage;
-
-        // Enviar petición PUT
-        const response = await fetch(`${API_BASE_URL}/dimension/${currentDimensionName}/${recordId}/`, {
+        const response = await fetch(`${API_BASE_URL}/dimension/${currentDimensionName}/${currentEditData.id}/`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(updateData)
+            body: JSON.stringify(data)
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Error al actualizar el registro');
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast(`${currentDimensionName.charAt(0).toUpperCase() + currentDimensionName.slice(1)} actualizado exitosamente`, 'success');
+            closeEditModal();
+            loadDimension(currentDimensionName, currentPage); // Recargar la lista
+            loadFormData(); // Actualizar formularios
+        } else {
+            throw new Error(result.error || 'Error al actualizar el registro');
         }
 
-        const updatedRecord = await response.json();
-
-        // Cerrar modal
-        closeEditModal();
-
-        // Recargar la dimensión manteniendo la página actual
-        // Usamos las variables guardadas para evitar el problema del null
-        await loadDimension(dimensionToReload, pageToReload);
-
-        showToast('Registro actualizado correctamente', 'success');
-
     } catch (error) {
-        console.error('Error updating record:', error);
-        showToast(`Error al actualizar: ${error.message}`, 'error');
+        console.error('Error updating dimension:', error);
+        showToast(error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -793,20 +931,535 @@ async function handleEditSubmit(event) {
 
 function closeEditModal() {
     elements.editModal.classList.remove('show');
+    elements.editForm.reset();
     currentEditData = null;
-    currentDimensionName = null;
+}
 
-    // Limpiar formulario
-    if (elements.editForm) {
-        elements.editForm.reset();
+// DELETE
+async function deleteDimension(dimensionName, recordId) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar este ${dimensionName}?`)) {
+        return;
     }
 
-    if (elements.formFields) {
-        elements.formFields.innerHTML = '';
+    try {
+        showLoading(true);
+
+        const response = await fetch(`${API_BASE_URL}/dimension/${dimensionName}/${recordId}/delete/`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showToast(`${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)} eliminado exitosamente`, 'success');
+            loadDimension(dimensionName, currentPage); // Recargar la lista
+            loadFormData(); // Actualizar formularios
+        } else {
+            const result = await response.json();
+            throw new Error(result.error || 'Error al eliminar el registro');
+        }
+
+    } catch (error) {
+        console.error('Error deleting dimension:', error);
+        showToast(error.message, 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
-// FUNCIONES DE UI
+// FUNCIONES DE HECHOS
+async function loadHechosData(page = 1) {
+    try {
+        showLoading(true);
+        currentHechosPage = page;
+
+        const response = await fetch(`${API_BASE_URL}/hechos/?page=${page}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            allHechosData = data.results || data;
+            totalHechosPages = Math.ceil((data.count || allHechosData.length) / 20);
+
+            displayHechos(allHechosData, data.count || allHechosData.length, page);
+            showToast('Tabla de hechos cargada correctamente', 'success');
+        } else {
+            throw new Error('Error en la respuesta del servidor');
+        }
+
+    } catch (error) {
+        console.error('Error loading hechos:', error);
+        showToast('Error al cargar la tabla de hechos', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displayHechos(data, totalRecords, page) {
+    const hechosContent = document.getElementById('hechos-content');
+    const table = createHechosTable(data, page);
+
+    hechosContent.innerHTML = `
+        <div class="hechos-header">
+            <h3>Registros de Rendimiento Académico</h3>
+            <p>Total: ${totalRecords} registros</p>
+        </div>
+        ${table}
+    `;
+}
+
+function createHechosTable(data, page) {
+    if (data.length === 0) {
+        return '<p class="text-center">No hay datos para mostrar</p>';
+    }
+
+    const headers = ['ID', 'Estudiante', 'Materia', 'Docente', 'Periodo', 'Programa', 'Calificación', 'Estatus', 'Créditos'];
+    const headerRow = headers.map(header => `<th>${header}</th>`).join('');
+
+    const dataRows = data.map(row => {
+        const cells = [
+            row.id_hecho,
+            row.id_estudiante_nombre || `ID: ${row.id_estudiante}`,
+            row.id_materia_nombre_materia || `ID: ${row.id_materia}`,
+            row.id_docente_nombre_docente || `ID: ${row.id_docente}`,
+            row.id_tiempo_periodo || `ID: ${row.id_tiempo}`,
+            row.id_programa_nombre_programa || `ID: ${row.id_programa}`,
+            row.calificacion,
+            row.estatus,
+            row.creditos_obtenidos
+        ].map(cell => `<td>${formatCellValue(cell)}</td>`);
+
+        cells.push(`
+            <td>
+                <button class="edit-btn" onclick="openEditHechoModal(${row.id_hecho})">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="delete-btn" onclick="deleteHecho(${row.id_hecho})">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </td>
+        `);
+
+        return `<tr>${cells.join('')}</tr>`;
+    }).join('');
+
+    const pagination = generateHechosPageNumbers(page, totalHechosPages);
+
+    return `
+        <div class="pagination-container">
+            <div class="pagination-info">
+                <p>Mostrando ${((page - 1) * 20) + 1} a ${Math.min(page * 20, data.length)} de ${data.length} registros</p>
+            </div>
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>${headerRow}<th>Acciones</th></tr>
+                    </thead>
+                    <tbody>${dataRows}</tbody>
+                </table>
+            </div>
+            ${pagination}
+        </div>
+    `;
+}
+
+function generateHechosPageNumbers(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let paginationHTML = '<div class="pagination-controls">';
+    paginationHTML += '<div class="pagination-numbers">';
+
+    // Botón anterior
+    paginationHTML += `<button class="pagination-btn" onclick="loadHechosData(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        paginationHTML += '<span class="pagination-dots">...</span>';
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadHechosData(${i})">${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        paginationHTML += '<span class="pagination-dots">...</span>';
+    }
+
+    // Botón siguiente
+    paginationHTML += `<button class="pagination-btn" onclick="loadHechosData(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    paginationHTML += '</div></div>';
+    return paginationHTML;
+}
+
+function openCreateHechoModal() {
+    loadHechoModalData(); // Cargar datos para los selects del modal
+    elements.createHechoModal.classList.add('show');
+}
+
+async function handleCreateHechoSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // Convertir campos numéricos
+        data.calificacion = parseFloat(data.calificacion);
+        data.creditos_obtenidos = parseInt(data.creditos_obtenidos);
+
+        const response = await fetch(`${API_BASE_URL}/hechos/create/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast('Hecho creado exitosamente', 'success');
+            closeCreateHechoModal();
+            loadHechosData(1); // Recargar la lista
+            loadDashboardData(); // Actualizar dashboard
+        } else {
+            throw new Error(result.error || 'Error al crear el hecho');
+        }
+
+    } catch (error) {
+        console.error('Error creating hecho:', error);
+        showToast(error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function closeCreateHechoModal() {
+    elements.createHechoModal.classList.remove('show');
+    elements.createHechoForm.reset();
+
+    // Limpiar autocompletes
+    clearAutocomplete('create_id_estudiante');
+    clearAutocomplete('create_id_materia');
+    clearAutocomplete('create_id_docente');
+    clearAutocomplete('create_id_tiempo');
+    clearAutocomplete('create_id_programa');
+
+    // Resetear el modal al estado original
+    const modalTitle = elements.createHechoModal.querySelector('h3');
+    modalTitle.innerHTML = '<i class="fas fa-plus"></i> Crear Nuevo Hecho';
+
+    const submitBtn = elements.createHechoForm.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-save"></i> Crear Hecho';
+
+    // Resetear el comportamiento del formulario
+    elements.createHechoForm.onsubmit = handleCreateHechoSubmit;
+    elements.createHechoForm.removeAttribute('data-hecho-id');
+}
+
+// Función auxiliar para limpiar autocompletes
+function clearAutocomplete(fieldId) {
+    const searchInput = document.getElementById(fieldId + '_search');
+    const hiddenInput = document.getElementById(fieldId);
+    const dropdown = document.getElementById(fieldId + '_dropdown');
+
+    if (searchInput) searchInput.value = '';
+    if (hiddenInput) hiddenInput.value = '';
+    if (dropdown) dropdown.classList.remove('show');
+}
+
+async function openEditHechoModal(hechoId) {
+    try {
+        showLoading(true);
+
+        const response = await fetch(`${API_BASE_URL}/hechos/${hechoId}/`);
+        const data = await response.json();
+
+        if (response.ok) {
+            // Cargar datos para los autocompletes del modal
+            await loadHechoModalData();
+
+            // Poblar el formulario con los datos correctos
+            setAutocompleteValue('create_id_estudiante', data.id_estudiante, data.id_estudiante_nombre);
+            setAutocompleteValue('create_id_materia', data.id_materia, data.id_materia_nombre_materia);
+            setAutocompleteValue('create_id_docente', data.id_docente, data.id_docente_nombre_docente);
+            setAutocompleteValue('create_id_tiempo', data.id_tiempo, data.id_tiempo_periodo);
+            setAutocompleteValue('create_id_programa', data.id_programa, data.id_programa_nombre_programa);
+
+            document.getElementById('create_calificacion').value = data.calificacion;
+            document.getElementById('create_estatus').value = data.estatus;
+            document.getElementById('create_creditos_obtenidos').value = data.creditos_obtenidos;
+
+            // Cambiar el título y comportamiento del modal
+            const modalTitle = elements.createHechoModal.querySelector('h3');
+            modalTitle.innerHTML = '<i class="fas fa-edit"></i> Editar Hecho';
+
+            // Cambiar el botón de submit
+            const submitBtn = elements.createHechoForm.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
+
+            // Cambiar el comportamiento del formulario
+            elements.createHechoForm.onsubmit = handleEditHechoSubmit;
+            elements.createHechoForm.dataset.hechoId = hechoId;
+
+            elements.createHechoModal.classList.add('show');
+        } else {
+            throw new Error('Error al cargar datos para editar');
+        }
+
+    } catch (error) {
+        console.error('Error opening edit hecho modal:', error);
+        showToast('Error al cargar datos para editar', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Función auxiliar para establecer valores en autocomplete
+function setAutocompleteValue(fieldId, value, text) {
+    const searchInput = document.getElementById(fieldId + '_search');
+    const hiddenInput = document.getElementById(fieldId);
+
+    if (searchInput && hiddenInput && text) {
+        searchInput.value = text;
+        hiddenInput.value = value;
+    }
+}
+
+async function handleEditHechoSubmit(event) {
+    event.preventDefault();
+
+    try {
+        showLoading(true);
+
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+        const hechoId = event.target.dataset.hechoId;
+
+        // Convertir campos numéricos
+        data.calificacion = parseFloat(data.calificacion);
+        data.creditos_obtenidos = parseInt(data.creditos_obtenidos);
+
+        const response = await fetch(`${API_BASE_URL}/hechos/${hechoId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            showToast('Hecho actualizado exitosamente', 'success');
+            closeCreateHechoModal();
+            loadHechosData(currentHechosPage); // Recargar la lista
+            loadDashboardData(); // Actualizar dashboard
+        } else {
+            throw new Error(result.error || 'Error al actualizar el hecho');
+        }
+
+    } catch (error) {
+        console.error('Error updating hecho:', error);
+        showToast(error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function deleteHecho(hechoId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este hecho?')) {
+        return;
+    }
+
+    try {
+        showLoading(true);
+
+        const response = await fetch(`${API_BASE_URL}/hechos/${hechoId}/delete/`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            showToast('Hecho eliminado exitosamente', 'success');
+            loadHechosData(currentHechosPage); // Recargar la lista
+            loadDashboardData(); // Actualizar dashboard
+        } else {
+            const result = await response.json();
+            throw new Error(result.error || 'Error al eliminar el hecho');
+        }
+
+    } catch (error) {
+        console.error('Error deleting hecho:', error);
+        showToast(error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// FUNCIONES DE FILTRADO MEJORADAS
+function filterHechos() {
+    const searchTerm = document.getElementById('hechos-search').value.toLowerCase();
+    const estatusFilter = document.getElementById('estatus-filter').value;
+    const calificacionMin = parseFloat(document.getElementById('calificacion-min').value) || 0;
+    const calificacionMax = parseFloat(document.getElementById('calificacion-max').value) || 100;
+
+    const filteredData = allHechosData.filter(hecho => {
+        // Filtro de búsqueda (busca en múltiples campos)
+        const searchMatch = !searchTerm ||
+            (hecho.id_estudiante_nombre && hecho.id_estudiante_nombre.toLowerCase().includes(searchTerm)) ||
+            (hecho.id_materia_nombre_materia && hecho.id_materia_nombre_materia.toLowerCase().includes(searchTerm)) ||
+            (hecho.id_docente_nombre_docente && hecho.id_docente_nombre_docente.toLowerCase().includes(searchTerm)) ||
+            (hecho.id_programa_nombre_programa && hecho.id_programa_nombre_programa.toLowerCase().includes(searchTerm)) ||
+            (hecho.estatus && hecho.estatus.toLowerCase().includes(searchTerm));
+
+        // Filtro de estatus
+        const estatusMatch = !estatusFilter || hecho.estatus === estatusFilter;
+
+        // Filtro de calificación
+        const calificacionMatch = hecho.calificacion >= calificacionMin && hecho.calificacion <= calificacionMax;
+
+        return searchMatch && estatusMatch && calificacionMatch;
+    });
+
+    // Resetear paginación
+    currentHechosPage = 1;
+    totalHechosPages = Math.ceil(filteredData.length / 20);
+
+    // Mostrar resultados filtrados
+    displayHechos(filteredData, filteredData.length, 1);
+}
+
+function generateHechosPageNumbers(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let pagination = '<div class="pagination">';
+
+    // Botón anterior
+    pagination += `<button onclick="loadHechosData(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        pagination += `<button onclick="loadHechosData(1)">1</button>`;
+        if (startPage > 2) {
+            pagination += `<span>...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pagination += `<button onclick="loadHechosData(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadHechosData(${totalPages})">${totalPages}</button>`;
+    }
+
+    // Botón siguiente
+    pagination += `<button onclick="loadHechosData(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    pagination += '</div>';
+    return pagination;
+}
+
+function generatePageNumbers(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let pagination = '<div class="pagination">';
+
+    // Botón anterior
+    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', 1)">1</button>`;
+        if (startPage > 2) {
+            pagination += `<span>...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${totalPages})">${totalPages}</button>`;
+    }
+
+    // Botón siguiente
+    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    pagination += '</div>';
+    return pagination;
+}
+
+function generateAnalysisPageNumbers(currentPage, totalPages) {
+    if (totalPages <= 1) return '';
+
+    let pagination = '<div class="pagination">';
+
+    // Botón anterior
+    pagination += `<button onclick="loadAnalysisPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
+    </button>`;
+
+    // Números de página
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        pagination += `<button onclick="loadAnalysisPage(1)">1</button>`;
+        if (startPage > 2) {
+            pagination += `<span>...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pagination += `<button onclick="loadAnalysisPage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadAnalysisPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    // Botón siguiente
+    pagination += `<button onclick="loadAnalysisPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
+    </button>`;
+
+    pagination += '</div>';
+    return pagination;
+}
+
+// FUNCIONES UTILITARIAS
 function showLoading(show) {
     if (elements.loading) {
         elements.loading.classList.toggle('show', show);
@@ -814,36 +1467,26 @@ function showLoading(show) {
 }
 
 function showToast(message, type = 'info') {
-    if (!elements.toastContainer) return;
-
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
-        <i class="fas fa-${getToastIcon(type)}"></i>
-        ${message}
+        <i class="${getToastIcon(type)}"></i>
+        <span>${message}</span>
     `;
 
     elements.toastContainer.appendChild(toast);
 
+    // Remover después de 3 segundos
     setTimeout(() => {
         toast.remove();
-    }, 4000);
+    }, 3000);
 }
 
 function getToastIcon(type) {
     const icons = {
-        'success': 'check-circle',
-        'error': 'exclamation-triangle',
-        'info': 'info-circle'
+        'success': 'fas fa-check-circle',
+        'error': 'fas fa-exclamation-circle',
+        'info': 'fas fa-info-circle'
     };
-    return icons[type] || 'info-circle';
+    return icons[type] || icons.info;
 }
-
-// Funciones globales para eventos onclick
-window.loadTasaReprobacion = loadTasaReprobacion;
-window.loadMateriasSobresalientes = loadMateriasSobresalientes;
-window.loadEvolucionPromedio = loadEvolucionPromedio;
-window.loadDimension = loadDimension;
-window.openEditModal = openEditModal;
-window.closeEditModal = closeEditModal;
-window.loadAnalysis = loadAnalysis;

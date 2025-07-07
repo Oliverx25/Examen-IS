@@ -23,8 +23,8 @@
                     <button class="nav-btn" data-section="analytics">
                         <i class="fas fa-analytics"></i> Análisis
                     </button>
-                    <button class="nav-btn" data-section="load-data">
-                        <i class="fas fa-upload"></i> Cargar Datos
+                    <button class="nav-btn" data-section="hechos">
+                        <i class="fas fa-table"></i> Tabla de Hechos
                     </button>
                     <button class="nav-btn" data-section="dimensions">
                         <i class="fas fa-database"></i> Dimensiones
@@ -151,54 +151,66 @@
                 </div>
             </section>
 
-            <!-- Load Data Section -->
-            <section id="load-data" class="content-section">
+            <!-- Hechos Section -->
+            <section id="hechos" class="content-section">
                 <div class="section-header">
-                    <h2><i class="fas fa-upload"></i> Cargar Nuevos Datos</h2>
-                    <p>Agregar nuevos registros de rendimiento académico al Data Warehouse</p>
+                    <h2><i class="fas fa-table"></i> Tabla de Hechos</h2>
+                    <p>Visualizar, gestionar y cargar nuevos registros de rendimiento académico</p>
                 </div>
 
+                <!-- Formulario para cargar nuevos datos -->
                 <div class="form-container">
+                    <h3><i class="fas fa-plus-circle"></i> Cargar Nuevos Datos</h3>
                     <form id="load-data-form" class="data-form">
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="id_estudiante">Estudiante</label>
-                                <select id="id_estudiante" name="id_estudiante" required>
-                                    <option value="">Seleccionar estudiante...</option>
-                                </select>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="id_estudiante_search" placeholder="Buscar estudiante..." autocomplete="off">
+                                    <input type="hidden" id="id_estudiante" name="id_estudiante" required>
+                                    <div class="autocomplete-dropdown" id="id_estudiante_dropdown"></div>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="id_materia">Materia</label>
-                                <select id="id_materia" name="id_materia" required>
-                                    <option value="">Seleccionar materia...</option>
-                                </select>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="id_materia_search" placeholder="Buscar materia..." autocomplete="off">
+                                    <input type="hidden" id="id_materia" name="id_materia" required>
+                                    <div class="autocomplete-dropdown" id="id_materia_dropdown"></div>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="id_docente">Docente</label>
-                                <select id="id_docente" name="id_docente" required>
-                                    <option value="">Seleccionar docente...</option>
-                                </select>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="id_docente_search" placeholder="Buscar docente..." autocomplete="off">
+                                    <input type="hidden" id="id_docente" name="id_docente" required>
+                                    <div class="autocomplete-dropdown" id="id_docente_dropdown"></div>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="id_tiempo">Periodo</label>
-                                <select id="id_tiempo" name="id_tiempo" required>
-                                    <option value="">Seleccionar periodo...</option>
-                                </select>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="id_tiempo_search" placeholder="Buscar periodo..." autocomplete="off">
+                                    <input type="hidden" id="id_tiempo" name="id_tiempo" required>
+                                    <div class="autocomplete-dropdown" id="id_tiempo_dropdown"></div>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="id_programa">Programa</label>
-                                <select id="id_programa" name="id_programa" required>
-                                    <option value="">Seleccionar programa...</option>
-                                </select>
+                                <div class="autocomplete-container">
+                                    <input type="text" id="id_programa_search" placeholder="Buscar programa..." autocomplete="off">
+                                    <input type="hidden" id="id_programa" name="id_programa" required>
+                                    <div class="autocomplete-dropdown" id="id_programa_dropdown"></div>
+                                </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="calificacion">Calificación (0-100)</label>
-                                <input type="number" id="calificacion" name="calificacion" min="0" max="100" step="0.01" required>
+                                <input type="number" id="calificacion" name="calificacion" min="0" max="100" required>
                             </div>
 
                             <div class="form-group">
@@ -207,7 +219,6 @@
                                     <option value="">Seleccionar estatus...</option>
                                     <option value="Aprobado">Aprobado</option>
                                     <option value="Reprobado">Reprobado</option>
-                                    <option value="Extraordinario">Extraordinario</option>
                                 </select>
                             </div>
 
@@ -227,6 +238,34 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Controles de filtro para la tabla -->
+                <div class="hechos-controls">
+                    <button class="btn btn-primary" onclick="openCreateHechoModal()">
+                        <i class="fas fa-plus"></i> Nuevo Registro
+                    </button>
+                    <div class="filter-controls">
+                        <div class="search-box">
+                            <input type="text" id="hechos-search" placeholder="Buscar en registros..." onkeyup="filterHechos()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <select id="estatus-filter" onchange="filterHechos()">
+                            <option value="">Todos los estatus</option>
+                            <option value="Aprobado">Aprobado</option>
+                            <option value="Reprobado">Reprobado</option>
+                        </select>
+                        <input type="number" id="calificacion-min" placeholder="Calif. mín" onchange="filterHechos()">
+                        <input type="number" id="calificacion-max" placeholder="Calif. máx" onchange="filterHechos()">
+                    </div>
+                </div>
+
+                <div class="hechos-content" id="hechos-content">
+                    <div class="placeholder-message">
+                        <i class="fas fa-table"></i>
+                        <h3>Cargando tabla de hechos...</h3>
+                        <p>Espera mientras se cargan los datos</p>
+                    </div>
+                </div>
             </section>
 
             <!-- Dimensions Section -->
@@ -243,6 +282,9 @@
                         </div>
                         <h3>Estudiantes</h3>
                         <p>Gestionar información de estudiantes</p>
+                        <button class="btn btn-sm btn-primary" onclick="openCreateDimensionModal('estudiante'); event.stopPropagation();">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
                     </div>
 
                     <div class="dimension-card" onclick="loadDimension('materia')">
@@ -251,6 +293,9 @@
                         </div>
                         <h3>Materias</h3>
                         <p>Gestionar catálogo de materias</p>
+                        <button class="btn btn-sm btn-primary" onclick="openCreateDimensionModal('materia'); event.stopPropagation();">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
                     </div>
 
                     <div class="dimension-card" onclick="loadDimension('docente')">
@@ -259,6 +304,9 @@
                         </div>
                         <h3>Docentes</h3>
                         <p>Gestionar información de docentes</p>
+                        <button class="btn btn-sm btn-primary" onclick="openCreateDimensionModal('docente'); event.stopPropagation();">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
                     </div>
 
                     <div class="dimension-card" onclick="loadDimension('programa')">
@@ -267,6 +315,9 @@
                         </div>
                         <h3>Programas</h3>
                         <p>Gestionar programas académicos</p>
+                        <button class="btn btn-sm btn-primary" onclick="openCreateDimensionModal('programa'); event.stopPropagation();">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
                     </div>
 
                     <div class="dimension-card" onclick="loadDimension('tiempo')">
@@ -275,6 +326,9 @@
                         </div>
                         <h3>Periodos</h3>
                         <p>Gestionar periodos académicos</p>
+                        <button class="btn btn-sm btn-primary" onclick="openCreateDimensionModal('tiempo'); event.stopPropagation();">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
                     </div>
                 </div>
 
@@ -315,6 +369,128 @@
                             <i class="fas fa-save"></i> Guardar Cambios
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear nuevas dimensiones -->
+    <div class="modal-overlay" id="create-dimension-modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="create-dimension-modal-title">
+                    <i class="fas fa-plus"></i> Crear Nuevo Registro
+                </h3>
+                <button class="modal-close" onclick="closeCreateDimensionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="create-dimension-form">
+                    <div id="create-dimension-form-fields">
+                        <!-- Los campos se generarán dinámicamente -->
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Crear Registro
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeCreateDimensionModal()">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para crear nuevos hechos -->
+    <div class="modal-overlay" id="create-hecho-modal-overlay">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-plus"></i> Crear Nuevo Hecho
+                </h3>
+                <button class="modal-close" onclick="closeCreateHechoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="create-hecho-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="create_id_estudiante">Estudiante</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="create_id_estudiante_search" placeholder="Buscar estudiante..." autocomplete="off">
+                                <input type="hidden" id="create_id_estudiante" name="id_estudiante" required>
+                                <div class="autocomplete-dropdown" id="create_id_estudiante_dropdown"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_id_materia">Materia</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="create_id_materia_search" placeholder="Buscar materia..." autocomplete="off">
+                                <input type="hidden" id="create_id_materia" name="id_materia" required>
+                                <div class="autocomplete-dropdown" id="create_id_materia_dropdown"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_id_docente">Docente</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="create_id_docente_search" placeholder="Buscar docente..." autocomplete="off">
+                                <input type="hidden" id="create_id_docente" name="id_docente" required>
+                                <div class="autocomplete-dropdown" id="create_id_docente_dropdown"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_id_tiempo">Periodo</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="create_id_tiempo_search" placeholder="Buscar periodo..." autocomplete="off">
+                                <input type="hidden" id="create_id_tiempo" name="id_tiempo" required>
+                                <div class="autocomplete-dropdown" id="create_id_tiempo_dropdown"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_id_programa">Programa</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="create_id_programa_search" placeholder="Buscar programa..." autocomplete="off">
+                                <input type="hidden" id="create_id_programa" name="id_programa" required>
+                                <div class="autocomplete-dropdown" id="create_id_programa_dropdown"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_calificacion">Calificación (0-100)</label>
+                            <input type="number" id="create_calificacion" name="calificacion" min="0" max="100" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_estatus">Estatus</label>
+                            <select id="create_estatus" name="estatus" required>
+                                <option value="">Seleccionar estatus...</option>
+                                <option value="Aprobado">Aprobado</option>
+                                <option value="Reprobado">Reprobado</option>
+                                <option value="Extraordinario">Extraordinario</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="create_creditos_obtenidos">Créditos Obtenidos</label>
+                            <input type="number" id="create_creditos_obtenidos" name="creditos_obtenidos" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Crear Hecho
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeCreateHechoModal()">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
                     </div>

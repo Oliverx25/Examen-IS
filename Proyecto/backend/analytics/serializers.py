@@ -42,11 +42,11 @@ class DimProgramaSerializer(serializers.ModelSerializer):
 class HechosRendimientoAcademicoSerializer(serializers.ModelSerializer):
     """Serializer para la tabla de hechos"""
     # Campos relacionados para mostrar información completa
-    estudiante_nombre = serializers.CharField(source='id_estudiante.nombre', read_only=True)
-    materia_nombre = serializers.CharField(source='id_materia.nombre_materia', read_only=True)
-    docente_nombre = serializers.CharField(source='id_docente.nombre_docente', read_only=True)
-    periodo = serializers.CharField(source='id_tiempo.periodo', read_only=True)
-    programa_nombre = serializers.CharField(source='id_programa.nombre_programa', read_only=True)
+    id_estudiante_nombre = serializers.CharField(source='id_estudiante.nombre', read_only=True)
+    id_materia_nombre_materia = serializers.CharField(source='id_materia.nombre_materia', read_only=True)
+    id_docente_nombre_docente = serializers.CharField(source='id_docente.nombre_docente', read_only=True)
+    id_tiempo_periodo = serializers.CharField(source='id_tiempo.periodo', read_only=True)
+    id_programa_nombre_programa = serializers.CharField(source='id_programa.nombre_programa', read_only=True)
 
     class Meta:
         model = HechosRendimientoAcademico

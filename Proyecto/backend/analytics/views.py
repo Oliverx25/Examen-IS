@@ -14,6 +14,12 @@ from .serializers import (
 )
 from rest_framework.pagination import PageNumberPagination
 
+class CustomPagination(PageNumberPagination):
+    """Paginación personalizada para las dimensiones"""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 # ===========================
 # ENDPOINTS PARA CARGAR DATOS
 # ===========================
@@ -209,87 +215,198 @@ def evolucion_promedio(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # ===========================
-# ENDPOINTS PARA ACTUALIZAR DIMENSIONES
+# ENDPOINTS PARA CRUD DE DIMENSIONES
 # ===========================
 
-class EstudianteUpdateView(generics.RetrieveUpdateAPIView):
-    """
-    PUT /api/dimension/estudiante/<id>/
-    Actualizar registros en la dimensión de estudiantes
-    """
+# CREATE endpoints
+class EstudianteCreateView(generics.CreateAPIView):
+    """POST /api/dimension/estudiante/ - Crear nuevo estudiante"""
     queryset = DimEstudiante.objects.all()
     serializer_class = DimEstudianteSerializer
-    lookup_field = 'id_estudiante'
 
-
-class MateriaUpdateView(generics.RetrieveUpdateAPIView):
-    """
-    PUT /api/dimension/materia/<id>/
-    Actualizar registros en la dimensión de materias
-    """
+class MateriaCreateView(generics.CreateAPIView):
+    """POST /api/dimension/materia/ - Crear nueva materia"""
     queryset = DimMateria.objects.all()
     serializer_class = DimMateriaSerializer
-    lookup_field = 'id_materia'
 
-
-class DocenteUpdateView(generics.RetrieveUpdateAPIView):
-    """
-    PUT /api/dimension/docente/<id>/
-    Actualizar registros en la dimensión de docentes
-    """
+class DocenteCreateView(generics.CreateAPIView):
+    """POST /api/dimension/docente/ - Crear nuevo docente"""
     queryset = DimDocente.objects.all()
     serializer_class = DimDocenteSerializer
-    lookup_field = 'id_docente'
 
-
-class ProgramaUpdateView(generics.RetrieveUpdateAPIView):
-    """
-    PUT /api/dimension/programa/<id>/
-    Actualizar registros en la dimensión de programas
-    """
+class ProgramaCreateView(generics.CreateAPIView):
+    """POST /api/dimension/programa/ - Crear nuevo programa"""
     queryset = DimPrograma.objects.all()
     serializer_class = DimProgramaSerializer
-    lookup_field = 'id_programa'
 
-# ===========================
-# ENDPOINTS ADICIONALES PARA LISTADO
-# ===========================
+class TiempoCreateView(generics.CreateAPIView):
+    """POST /api/dimension/tiempo/ - Crear nuevo periodo"""
+    queryset = DimTiempo.objects.all()
+    serializer_class = DimTiempoSerializer
 
-class CustomPagination(PageNumberPagination):
-    """Paginación personalizada para las dimensiones"""
-    page_size = 20
-    page_size_query_param = 'page_size'
-    max_page_size = 100
-
-class EstudianteListView(generics.ListAPIView):
-    """GET /api/dimension/estudiante/ - Listar estudiantes"""
+# READ endpoints (ya existían, pero los organizo mejor)
+class EstudianteListView(generics.ListCreateAPIView):
+    """GET /api/dimension/estudiante/ - Listar estudiantes, POST - Crear estudiante"""
     queryset = DimEstudiante.objects.all().order_by('id_estudiante')
     serializer_class = DimEstudianteSerializer
     pagination_class = CustomPagination
 
-class MateriaListView(generics.ListAPIView):
-    """GET /api/dimension/materia/ - Listar materias"""
+class MateriaListView(generics.ListCreateAPIView):
+    """GET /api/dimension/materia/ - Listar materias, POST - Crear materia"""
     queryset = DimMateria.objects.all().order_by('id_materia')
     serializer_class = DimMateriaSerializer
     pagination_class = CustomPagination
 
-class DocenteListView(generics.ListAPIView):
-    """GET /api/dimension/docente/ - Listar docentes"""
+class DocenteListView(generics.ListCreateAPIView):
+    """GET /api/dimension/docente/ - Listar docentes, POST - Crear docente"""
     queryset = DimDocente.objects.all().order_by('id_docente')
     serializer_class = DimDocenteSerializer
     pagination_class = CustomPagination
 
-class ProgramaListView(generics.ListAPIView):
-    """GET /api/dimension/programa/ - Listar programas"""
+class ProgramaListView(generics.ListCreateAPIView):
+    """GET /api/dimension/programa/ - Listar programas, POST - Crear programa"""
     queryset = DimPrograma.objects.all().order_by('id_programa')
     serializer_class = DimProgramaSerializer
     pagination_class = CustomPagination
 
-class TiempoListView(generics.ListAPIView):
-    """GET /api/dimension/tiempo/ - Listar periodos"""
+class TiempoListView(generics.ListCreateAPIView):
+    """GET /api/dimension/tiempo/ - Listar periodos, POST - Crear periodo"""
     queryset = DimTiempo.objects.all().order_by('id_tiempo')
     serializer_class = DimTiempoSerializer
     pagination_class = CustomPagination
+
+# UPDATE endpoints (ya existían)
+class EstudianteUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/dimension/estudiante/<id>/ - Actualizar estudiante"""
+    queryset = DimEstudiante.objects.all()
+    serializer_class = DimEstudianteSerializer
+    lookup_field = 'id_estudiante'
+
+class MateriaUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/dimension/materia/<id>/ - Actualizar materia"""
+    queryset = DimMateria.objects.all()
+    serializer_class = DimMateriaSerializer
+    lookup_field = 'id_materia'
+
+class DocenteUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/dimension/docente/<id>/ - Actualizar docente"""
+    queryset = DimDocente.objects.all()
+    serializer_class = DimDocenteSerializer
+    lookup_field = 'id_docente'
+
+class ProgramaUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/dimension/programa/<id>/ - Actualizar programa"""
+    queryset = DimPrograma.objects.all()
+    serializer_class = DimProgramaSerializer
+    lookup_field = 'id_programa'
+
+class TiempoUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/dimension/tiempo/<id>/ - Actualizar periodo"""
+    queryset = DimTiempo.objects.all()
+    serializer_class = DimTiempoSerializer
+    lookup_field = 'id_tiempo'
+
+# DELETE endpoints
+@api_view(['DELETE'])
+def delete_estudiante(request, id_estudiante):
+    """DELETE /api/dimension/estudiante/<id>/ - Eliminar estudiante"""
+    try:
+        estudiante = DimEstudiante.objects.get(id_estudiante=id_estudiante)
+        estudiante.delete()
+        return Response({'message': 'Estudiante eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except DimEstudiante.DoesNotExist:
+        return Response({'error': 'Estudiante no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_materia(request, id_materia):
+    """DELETE /api/dimension/materia/<id>/ - Eliminar materia"""
+    try:
+        materia = DimMateria.objects.get(id_materia=id_materia)
+        materia.delete()
+        return Response({'message': 'Materia eliminada correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except DimMateria.DoesNotExist:
+        return Response({'error': 'Materia no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_docente(request, id_docente):
+    """DELETE /api/dimension/docente/<id>/ - Eliminar docente"""
+    try:
+        docente = DimDocente.objects.get(id_docente=id_docente)
+        docente.delete()
+        return Response({'message': 'Docente eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except DimDocente.DoesNotExist:
+        return Response({'error': 'Docente no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_programa(request, id_programa):
+    """DELETE /api/dimension/programa/<id>/ - Eliminar programa"""
+    try:
+        programa = DimPrograma.objects.get(id_programa=id_programa)
+        programa.delete()
+        return Response({'message': 'Programa eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except DimPrograma.DoesNotExist:
+        return Response({'error': 'Programa no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def delete_tiempo(request, id_tiempo):
+    """DELETE /api/dimension/tiempo/<id>/ - Eliminar periodo"""
+    try:
+        tiempo = DimTiempo.objects.get(id_tiempo=id_tiempo)
+        tiempo.delete()
+        return Response({'message': 'Periodo eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except DimTiempo.DoesNotExist:
+        return Response({'error': 'Periodo no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+# ===========================
+# ENDPOINTS PARA TABLA DE HECHOS
+# ===========================
+
+class HechosListView(generics.ListAPIView):
+    """GET /api/hechos/ - Listar tabla de hechos"""
+    queryset = HechosRendimientoAcademico.objects.select_related(
+        'id_estudiante', 'id_materia', 'id_docente', 'id_tiempo', 'id_programa'
+    ).order_by('-id_hecho')
+    serializer_class = HechosRendimientoAcademicoSerializer
+    pagination_class = CustomPagination
+
+class HechosCreateView(generics.CreateAPIView):
+    """POST /api/hechos/ - Crear nuevo hecho"""
+    queryset = HechosRendimientoAcademico.objects.all()
+    serializer_class = HechosRendimientoAcademicoSerializer
+
+class HechosUpdateView(generics.RetrieveUpdateAPIView):
+    """PUT /api/hechos/<id>/ - Actualizar hecho"""
+    queryset = HechosRendimientoAcademico.objects.select_related(
+        'id_estudiante', 'id_materia', 'id_docente', 'id_tiempo', 'id_programa'
+    ).all()
+    serializer_class = HechosRendimientoAcademicoSerializer
+    lookup_field = 'id_hecho'
+
+@api_view(['DELETE'])
+def delete_hecho(request, id_hecho):
+    """DELETE /api/hechos/<id>/ - Eliminar hecho"""
+    try:
+        hecho = HechosRendimientoAcademico.objects.get(id_hecho=id_hecho)
+        hecho.delete()
+        return Response({'message': 'Hecho eliminado correctamente'}, status=status.HTTP_204_NO_CONTENT)
+    except HechosRendimientoAcademico.DoesNotExist:
+        return Response({'error': 'Hecho no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error al eliminar: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+# ===========================
+# ENDPOINTS ADICIONALES PARA LISTADO
+# ===========================
 
 @api_view(['GET'])
 def dashboard_summary(request):
