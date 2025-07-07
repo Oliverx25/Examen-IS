@@ -132,6 +132,34 @@ Responde a tres preguntas de negocio fundamentales:
 - **Visualización** paginada de todas las dimensiones
 - **Edición** en línea de registros
 
+## 🧊 Sistema OLAP Multidimensional *(NUEVO)*
+
+### 📊 Cubo OLAP Completo
+Se ha implementado un **sistema OLAP (Online Analytical Processing) completo** que permite realizar análisis multidimensionales avanzados sobre el Data Warehouse académico. Esta funcionalidad proporciona capacidades de inteligencia de negocios de nivel empresarial.
+
+#### ✨ Características Principales
+- **🎢 Roll-up**: Agregación jerárquica de datos (ej: estudiantes → género → programa)
+- **🔍 Drill-down**: Desagregación detallada (ej: departamento → materia específica)
+- **✂️ Slice**: Cortes unidimensionales (ej: análisis solo para 2024)
+- **🎲 Dice**: Filtrado multidimensional avanzado
+- **🔄 Pivot**: Rotación de dimensiones para nuevas perspectivas
+- **🧠 Autocompletado Inteligente**: Sugerencias automáticas en todos los campos
+- **📋 Ejemplos Predefinidos**: Botones para cargar configuraciones válidas automáticamente
+
+#### 🚀 Acceso Rápido
+- **Interfaz OLAP**: http://localhost:3000/olap_analyzer.html
+- **Motor MDX personalizado** con sintaxis SQL y MDX
+- **API REST completa** para operaciones OLAP programáticas
+
+#### 📖 Documentación Detallada
+Para información completa sobre el uso del sistema OLAP, ejemplos específicos, guías paso a paso y troubleshooting, consulta:
+
+**👉 [📖 README_OLAP.md - Documentación Completa del Sistema OLAP](./README_OLAP.md)**
+
+*Incluye: instalación, configuración, ejemplos exactos para cada operación, esquema del cubo, casos de uso reales y guía de solución de problemas.*
+
+---
+
 ### 🔧 Características Técnicas
 
 #### Paginación Inteligente
@@ -226,14 +254,16 @@ docker-compose down -v
 2. **Análisis** - Ejecución de análisis multidimensionales
 3. **Cargar Datos** - Ingreso de nuevos registros
 4. **Dimensiones** - Gestión de datos maestros
+5. **🆕 OLAP Analyzer** - Análisis multidimensional avanzado (http://localhost:3000/olap_analyzer.html)
 
 ### Flujo de Trabajo Típico
 
 1. **Cargar datos** iniciales a través del módulo "Cargar Datos"
 2. **Verificar información** en las dimensiones
 3. **Ejecutar análisis** desde el módulo "Análisis"
-4. **Revisar métricas** en el Dashboard
-5. **Editar registros** según sea necesario
+4. **🆕 Realizar análisis OLAP** avanzados con el OLAP Analyzer (Roll-up, Drill-down, Slice, Dice, Pivot)
+5. **Revisar métricas** en el Dashboard
+6. **Editar registros** según sea necesario
 
 ## 🔗 Endpoints de la API
 
@@ -243,6 +273,17 @@ GET /api/analytics/dashboard/ - Estadísticas generales
 GET /api/analytics/tasa-reprobacion/ - Análisis de reprobación
 GET /api/analytics/materias-sobresalientes/ - Materias destacadas
 GET /api/analytics/evolucion-promedio/ - Evolución temporal
+```
+
+### OLAP Operations *(NUEVO)*
+```
+POST /api/olap/rollup/ - Operación Roll-up (agregación jerárquica)
+POST /api/olap/drilldown/ - Operación Drill-down (desagregación)
+POST /api/olap/slice/ - Operación Slice (corte unidimensional)
+POST /api/olap/dice/ - Operación Dice (filtrado multidimensional)
+POST /api/olap/pivot/ - Operación Pivot (rotación de dimensiones)
+GET /api/olap/schema/ - Esquema del cubo multidimensional
+POST /api/olap/custom-mdx/ - Consultas MDX personalizadas
 ```
 
 ### Dimensiones
@@ -264,15 +305,24 @@ Proyecto/
 ├── backend/
 │   ├── datawarehouse/          # Configuración principal
 │   ├── analytics/              # Módulo de análisis
+│   │   ├── views.py           # + Endpoints OLAP
+│   │   └── urls.py            # + Rutas OLAP
 │   ├── dimensions/             # Gestión de dimensiones
 │   ├── data_loading/           # Carga de datos
 │   ├── requirements.txt        # Dependencias Python
 │   └── Dockerfile             # Imagen del backend
 ├── frontend/
 │   ├── index.html             # Página principal
+│   ├── olap_analyzer.html     # 🆕 Interfaz OLAP
+│   ├── olap_analyzer.js       # 🆕 Lógica OLAP + Autocompletado
 │   ├── script.js              # Lógica JavaScript
 │   ├── styles.css             # Estilos CSS
 │   └── Dockerfile             # Imagen del frontend
+├── olap/                      # 🆕 Motor OLAP
+│   ├── __init__.py            # Módulo OLAP
+│   ├── cube_schema.py         # Esquema del cubo multidimensional
+│   └── mdx_engine.py          # Motor de consultas MDX
 ├── docker-compose.yml         # Orquestación de servicios
-└── README.md                  # Documentación
+├── README.md                  # Documentación principal
+└── README_OLAP.md            # 🆕 Documentación completa OLAP
 ```
