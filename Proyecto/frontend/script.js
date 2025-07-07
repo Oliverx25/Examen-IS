@@ -20,15 +20,6 @@ let currentHechosPage = 1;
 let totalHechosPages = 1;
 let allHechosData = [];
 
-// Estado para autocomplete
-let autocompleteData = {
-    estudiantes: [],
-    materias: [],
-    docentes: [],
-    programas: [],
-    tiempos: []
-};
-
 // Elementos del DOM
 let elements = {};
 
@@ -39,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showSection('dashboard');
     loadDashboardData();
     loadFormData();
+    loadAutocompleteOptions(); // Cargar datos de autocomplete
 });
 
 function initializeElements() {
@@ -333,37 +325,44 @@ function createAnalysisTable(data, totalRecords, page) {
 function generateAnalysisPageNumbers(currentPage, totalPages) {
     if (totalPages <= 1) return '';
 
-    let paginationHTML = '<div class="pagination-controls">';
-    paginationHTML += '<div class="pagination-numbers">';
+    let pagination = '<div class="pagination">';
 
     // Botón anterior
-    paginationHTML += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i>
+    pagination += `<button onclick="loadAnalysis('${currentAnalysisType}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
     </button>`;
+
+    // Botón primera página
+    if (currentPage > 3) {
+        pagination += `<button onclick="loadAnalysis('${currentAnalysisType}', 1)">1</button>`;
+        if (currentPage > 4) {
+            pagination += `<span>...</span>`;
+        }
+    }
 
     // Números de página
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
 
-    if (startPage > 1) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
-    }
-
     for (let i = startPage; i <= endPage; i++) {
-        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadAnalysis('${currentAnalysisType}', ${i})">${i}</button>`;
+        pagination += `<button onclick="loadAnalysis('${currentAnalysisType}', ${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
     }
 
-    if (endPage < totalPages) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
+    // Botón última página
+    if (currentPage < totalPages - 2) {
+        if (currentPage < totalPages - 3) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadAnalysis('${currentAnalysisType}', ${totalPages})">${totalPages}</button>`;
     }
 
     // Botón siguiente
-    paginationHTML += `<button class="pagination-btn" onclick="loadAnalysis('${currentAnalysisType}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        <i class="fas fa-chevron-right"></i>
+    pagination += `<button onclick="loadAnalysis('${currentAnalysisType}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
     </button>`;
 
-    paginationHTML += '</div></div>';
-    return paginationHTML;
+    pagination += '</div>';
+    return pagination;
 }
 
 function loadAnalysis(analysisType, page) {
@@ -433,24 +432,21 @@ async function loadFormData() {
 
 async function loadHechoModalData() {
     try {
-        // Si ya tenemos los datos, no necesitamos volver a cargarlos
-        if (autocompleteData.estudiantes.length === 0) {
-            // Cargar datos para los autocompletes del modal de hechos
-            const [estudiantes, materias, docentes, programas, tiempos] = await Promise.all([
-                fetch(`${API_BASE_URL}/dimension/estudiante/`).then(r => r.json()),
-                fetch(`${API_BASE_URL}/dimension/materia/`).then(r => r.json()),
-                fetch(`${API_BASE_URL}/dimension/docente/`).then(r => r.json()),
-                fetch(`${API_BASE_URL}/dimension/programa/`).then(r => r.json()),
-                fetch(`${API_BASE_URL}/dimension/tiempo/`).then(r => r.json())
-            ]);
+        // Siempre cargar datos frescos del servidor para asegurar que aparezcan los registros más recientes
+        const [estudiantes, materias, docentes, programas, tiempos] = await Promise.all([
+            fetch(`${API_BASE_URL}/dimension/estudiante/`).then(r => r.json()),
+            fetch(`${API_BASE_URL}/dimension/materia/`).then(r => r.json()),
+            fetch(`${API_BASE_URL}/dimension/docente/`).then(r => r.json()),
+            fetch(`${API_BASE_URL}/dimension/programa/`).then(r => r.json()),
+            fetch(`${API_BASE_URL}/dimension/tiempo/`).then(r => r.json())
+        ]);
 
-            // Guardar datos en el estado global
-            autocompleteData.estudiantes = estudiantes.results || estudiantes;
-            autocompleteData.materias = materias.results || materias;
-            autocompleteData.docentes = docentes.results || docentes;
-            autocompleteData.programas = programas.results || programas;
-            autocompleteData.tiempos = tiempos.results || tiempos;
-        }
+        // Actualizar datos en el estado global
+        autocompleteData.estudiantes = estudiantes.results || estudiantes;
+        autocompleteData.materias = materias.results || materias;
+        autocompleteData.docentes = docentes.results || docentes;
+        autocompleteData.programas = programas.results || programas;
+        autocompleteData.tiempos = tiempos.results || tiempos;
 
         // Configurar autocompletes del modal de hechos (con prefijo create_)
         setupAutocomplete('create_id_estudiante', autocompleteData.estudiantes, 'id_estudiante', 'nombre');
@@ -698,37 +694,44 @@ function createDimensionTable(data, page) {
 function generatePageNumbers(currentPage, totalPages) {
     if (totalPages <= 1) return '';
 
-    let paginationHTML = '<div class="pagination-controls">';
-    paginationHTML += '<div class="pagination-numbers">';
+    let pagination = '<div class="pagination">';
 
     // Botón anterior
-    paginationHTML += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i>
+    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
     </button>`;
+
+    // Botón primera página
+    if (currentPage > 3) {
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', 1)">1</button>`;
+        if (currentPage > 4) {
+            pagination += `<span>...</span>`;
+        }
+    }
 
     // Números de página
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
 
-    if (startPage > 1) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
-    }
-
     for (let i = startPage; i <= endPage; i++) {
-        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadDimension('${currentDimensionName}', ${i})">${i}</button>`;
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
     }
 
-    if (endPage < totalPages) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
+    // Botón última página
+    if (currentPage < totalPages - 2) {
+        if (currentPage < totalPages - 3) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${totalPages})">${totalPages}</button>`;
     }
 
     // Botón siguiente
-    paginationHTML += `<button class="pagination-btn" onclick="loadDimension('${currentDimensionName}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        <i class="fas fa-chevron-right"></i>
+    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
     </button>`;
 
-    paginationHTML += '</div></div>';
-    return paginationHTML;
+    pagination += '</div>';
+    return pagination;
 }
 
 function getIdField(dimensionName) {
@@ -747,27 +750,32 @@ function getFieldConfig(dimensionName) {
         'estudiante': {
             fields: ['nombre', 'genero', 'programa_academico', 'semestre_ingreso', 'fecha_nacimiento'],
             labels: ['Nombre', 'Género', 'Programa Académico', 'Semestre de Ingreso', 'Fecha de Nacimiento'],
-            types: ['text', 'text', 'text', 'text', 'date']
+            types: ['text', 'autocomplete', 'autocomplete', 'autocomplete', 'date'],
+            autocompleteTypes: [null, 'generos', 'programas', 'semestres', null]
         },
         'materia': {
             fields: ['nombre_materia', 'creditos', 'departamento', 'nivel'],
             labels: ['Nombre de la Materia', 'Créditos', 'Departamento', 'Nivel'],
-            types: ['text', 'number', 'text', 'text']
+            types: ['text', 'number', 'autocomplete', 'autocomplete'],
+            autocompleteTypes: [null, null, 'departamentos', 'niveles_materia']
         },
         'docente': {
             fields: ['nombre_docente', 'grado_academico', 'departamento_asignado', 'email'],
             labels: ['Nombre del Docente', 'Grado Académico', 'Departamento Asignado', 'Email'],
-            types: ['text', 'text', 'text', 'email']
+            types: ['text', 'autocomplete', 'autocomplete', 'email'],
+            autocompleteTypes: [null, 'grados_academicos', 'departamentos', null]
         },
         'programa': {
             fields: ['nombre_programa', 'nivel', 'coordinador', 'facultad'],
             labels: ['Nombre del Programa', 'Nivel', 'Coordinador', 'Facultad'],
-            types: ['text', 'text', 'text', 'text']
+            types: ['text', 'autocomplete', 'autocomplete', 'autocomplete'],
+            autocompleteTypes: [null, 'niveles_programa', 'coordinadores', 'facultades']
         },
         'tiempo': {
             fields: ['anio', 'periodo', 'mes_inicio', 'mes_fin', 'descripcion'],
             labels: ['Año', 'Periodo', 'Mes de Inicio', 'Mes de Fin', 'Descripción'],
-            types: ['number', 'text', 'number', 'number', 'text']
+            types: ['number', 'text', 'number', 'number', 'text'],
+            autocompleteTypes: [null, null, null, null, null]
         }
     };
     return configs[dimensionName];
@@ -776,23 +784,42 @@ function getFieldConfig(dimensionName) {
 // FUNCIONES DE CRUD PARA DIMENSIONES
 
 // CREATE
-function openCreateDimensionModal(dimensionName) {
+async function openCreateDimensionModal(dimensionName) {
     currentDimensionName = dimensionName;
     const config = getFieldConfig(dimensionName);
 
     elements.createDimensionTitle.innerHTML = `<i class="fas fa-plus"></i> Crear Nuevo ${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)}`;
 
+    // Asegurar que tenemos los datos de autocomplete
+    await loadAutocompleteOptions();
+
     const fieldsHTML = config.fields.map((field, index) => {
         const required = field !== 'email' && field !== 'descripcion' && field !== 'coordinador' && field !== 'facultad' ? 'required' : '';
-        return `
-            <div class="form-group">
-                <label for="create_${field}">${config.labels[index]}</label>
-                <input type="${config.types[index]}" id="create_${field}" name="${field}" ${required}>
-            </div>
-        `;
+        const fieldType = config.types[index];
+        const autocompleteType = config.autocompleteTypes[index];
+
+        if (fieldType === 'autocomplete') {
+            return generateAutocompleteField(`create_${field}`, config.labels[index], autocompleteType, required);
+        } else {
+            return `
+                <div class="form-group">
+                    <label for="create_${field}">${config.labels[index]}</label>
+                    <input type="${fieldType}" id="create_${field}" name="${field}" ${required}>
+                </div>
+            `;
+        }
     }).join('');
 
     elements.createDimensionFields.innerHTML = fieldsHTML;
+
+    // Configurar autocompletes después de insertar el HTML
+    config.fields.forEach((field, index) => {
+        if (config.types[index] === 'autocomplete') {
+            const autocompleteType = config.autocompleteTypes[index];
+            setupDimensionAutocomplete(`create_${field}`, autocompleteType);
+        }
+    });
+
     elements.createDimensionModal.classList.add('show');
 }
 
@@ -827,7 +854,10 @@ async function handleCreateDimensionSubmit(event) {
             showToast(`${currentDimensionName.charAt(0).toUpperCase() + currentDimensionName.slice(1)} creado exitosamente`, 'success');
             closeCreateDimensionModal();
             loadDimension(currentDimensionName, 1); // Recargar la lista
-            loadFormData(); // Actualizar formularios
+
+            // Recargar datos del autocomplete para que aparezcan inmediatamente
+            await reloadAutocompleteData();
+
         } else {
             throw new Error(result.error || 'Error al crear el registro');
         }
@@ -840,9 +870,20 @@ async function handleCreateDimensionSubmit(event) {
     }
 }
 
+// Función para cerrar modal de creación de dimensión
 function closeCreateDimensionModal() {
     elements.createDimensionModal.classList.remove('show');
     elements.createDimensionForm.reset();
+
+    // Limpiar autocompletes si existen
+    const config = getFieldConfig(currentDimensionName);
+    if (config) {
+        config.fields.forEach((field, index) => {
+            if (config.types[index] === 'autocomplete') {
+                clearAutocomplete(`create_${field}`);
+            }
+        });
+    }
 }
 
 // UPDATE
@@ -860,18 +901,43 @@ async function openEditModal(dimensionName, recordId) {
 
             elements.modalTitle.innerHTML = `<i class="fas fa-edit"></i> Editar ${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)}`;
 
+            // Asegurar que tenemos los datos de autocomplete
+            await loadAutocompleteOptions();
+
             const fieldsHTML = config.fields.map((field, index) => {
                 const value = data[field] || '';
                 const required = field !== 'email' && field !== 'descripcion' && field !== 'coordinador' && field !== 'facultad' ? 'required' : '';
-                return `
-                    <div class="form-group">
-                        <label for="edit_${field}">${config.labels[index]}</label>
-                        <input type="${config.types[index]}" id="edit_${field}" name="${field}" value="${value}" ${required}>
-                    </div>
-                `;
+                const fieldType = config.types[index];
+                const autocompleteType = config.autocompleteTypes[index];
+
+                if (fieldType === 'autocomplete') {
+                    return generateAutocompleteField(`edit_${field}`, config.labels[index], autocompleteType, required, value);
+                } else {
+                    return `
+                        <div class="form-group">
+                            <label for="edit_${field}">${config.labels[index]}</label>
+                            <input type="${fieldType}" id="edit_${field}" name="${field}" value="${value}" ${required}>
+                        </div>
+                    `;
+                }
             }).join('');
 
             elements.formFields.innerHTML = fieldsHTML;
+
+            // Configurar autocompletes después de insertar el HTML
+            config.fields.forEach((field, index) => {
+                if (config.types[index] === 'autocomplete') {
+                    const autocompleteType = config.autocompleteTypes[index];
+                    setupDimensionAutocomplete(`edit_${field}`, autocompleteType);
+
+                    // Establecer el valor inicial
+                    const value = data[field] || '';
+                    if (value) {
+                        setAutocompleteValue(`edit_${field}`, value, value);
+                    }
+                }
+            });
+
             elements.editModal.classList.add('show');
         } else {
             throw new Error('Error al cargar datos para editar');
@@ -916,7 +982,10 @@ async function handleEditSubmit(event) {
             showToast(`${currentDimensionName.charAt(0).toUpperCase() + currentDimensionName.slice(1)} actualizado exitosamente`, 'success');
             closeEditModal();
             loadDimension(currentDimensionName, currentPage); // Recargar la lista
-            loadFormData(); // Actualizar formularios
+
+            // Recargar datos del autocomplete para que se actualicen los nombres
+            await reloadAutocompleteData();
+
         } else {
             throw new Error(result.error || 'Error al actualizar el registro');
         }
@@ -929,10 +998,21 @@ async function handleEditSubmit(event) {
     }
 }
 
+// Función para cerrar modal de edición
 function closeEditModal() {
     elements.editModal.classList.remove('show');
     elements.editForm.reset();
     currentEditData = null;
+
+    // Limpiar autocompletes si existen
+    const config = getFieldConfig(currentDimensionName);
+    if (config) {
+        config.fields.forEach((field, index) => {
+            if (config.types[index] === 'autocomplete') {
+                clearAutocomplete(`edit_${field}`);
+            }
+        });
+    }
 }
 
 // DELETE
@@ -951,7 +1031,10 @@ async function deleteDimension(dimensionName, recordId) {
         if (response.ok) {
             showToast(`${dimensionName.charAt(0).toUpperCase() + dimensionName.slice(1)} eliminado exitosamente`, 'success');
             loadDimension(dimensionName, currentPage); // Recargar la lista
-            loadFormData(); // Actualizar formularios
+
+            // Recargar datos del autocomplete para que se actualicen
+            await reloadAutocompleteData();
+
         } else {
             const result = await response.json();
             throw new Error(result.error || 'Error al eliminar el registro');
@@ -1063,37 +1146,44 @@ function createHechosTable(data, page) {
 function generateHechosPageNumbers(currentPage, totalPages) {
     if (totalPages <= 1) return '';
 
-    let paginationHTML = '<div class="pagination-controls">';
-    paginationHTML += '<div class="pagination-numbers">';
+    let pagination = '<div class="pagination">';
 
     // Botón anterior
-    paginationHTML += `<button class="pagination-btn" onclick="loadHechosData(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i>
+    pagination += `<button onclick="loadHechosData(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Anterior
     </button>`;
+
+    // Botón primera página
+    if (currentPage > 3) {
+        pagination += `<button onclick="loadHechosData(1)">1</button>`;
+        if (currentPage > 4) {
+            pagination += `<span>...</span>`;
+        }
+    }
 
     // Números de página
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
 
-    if (startPage > 1) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
-    }
-
     for (let i = startPage; i <= endPage; i++) {
-        paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadHechosData(${i})">${i}</button>`;
+        pagination += `<button onclick="loadHechosData(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
     }
 
-    if (endPage < totalPages) {
-        paginationHTML += '<span class="pagination-dots">...</span>';
+    // Botón última página
+    if (currentPage < totalPages - 2) {
+        if (currentPage < totalPages - 3) {
+            pagination += `<span>...</span>`;
+        }
+        pagination += `<button onclick="loadHechosData(${totalPages})">${totalPages}</button>`;
     }
 
     // Botón siguiente
-    paginationHTML += `<button class="pagination-btn" onclick="loadHechosData(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        <i class="fas fa-chevron-right"></i>
+    pagination += `<button onclick="loadHechosData(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Siguiente <i class="fas fa-chevron-right"></i>
     </button>`;
 
-    paginationHTML += '</div></div>';
-    return paginationHTML;
+    pagination += '</div>';
+    return pagination;
 }
 
 function openCreateHechoModal() {
@@ -1127,8 +1217,15 @@ async function handleCreateHechoSubmit(event) {
         if (response.ok) {
             showToast('Hecho creado exitosamente', 'success');
             closeCreateHechoModal();
-            loadHechosData(1); // Recargar la lista
-            loadDashboardData(); // Actualizar dashboard
+
+            // Recargar la tabla de hechos automáticamente
+            await loadHechosData(currentHechosPage);
+
+            // Actualizar dashboard
+            loadDashboardData();
+
+            // Recargar datos de autocomplete para mantener todo actualizado
+            await reloadAutocompleteData();
         } else {
             throw new Error(result.error || 'Error al crear el hecho');
         }
@@ -1260,8 +1357,15 @@ async function handleEditHechoSubmit(event) {
         if (response.ok) {
             showToast('Hecho actualizado exitosamente', 'success');
             closeCreateHechoModal();
-            loadHechosData(currentHechosPage); // Recargar la lista
-            loadDashboardData(); // Actualizar dashboard
+
+            // Recargar la tabla de hechos automáticamente manteniendo la página actual
+            await loadHechosData(currentHechosPage);
+
+            // Actualizar dashboard
+            loadDashboardData();
+
+            // Recargar datos de autocomplete para mantener todo actualizado
+            await reloadAutocompleteData();
         } else {
             throw new Error(result.error || 'Error al actualizar el hecho');
         }
@@ -1288,8 +1392,15 @@ async function deleteHecho(hechoId) {
 
         if (response.ok) {
             showToast('Hecho eliminado exitosamente', 'success');
-            loadHechosData(currentHechosPage); // Recargar la lista
-            loadDashboardData(); // Actualizar dashboard
+
+            // Recargar la tabla de hechos automáticamente
+            await loadHechosData(currentHechosPage);
+
+            // Actualizar dashboard
+            loadDashboardData();
+
+            // Recargar datos de autocomplete para mantener todo actualizado
+            await reloadAutocompleteData();
         } else {
             const result = await response.json();
             throw new Error(result.error || 'Error al eliminar el hecho');
@@ -1310,183 +1421,270 @@ function filterHechos() {
     const calificacionMin = parseFloat(document.getElementById('calificacion-min').value) || 0;
     const calificacionMax = parseFloat(document.getElementById('calificacion-max').value) || 100;
 
-    const filteredData = allHechosData.filter(hecho => {
-        // Filtro de búsqueda (busca en múltiples campos)
-        const searchMatch = !searchTerm ||
-            (hecho.id_estudiante_nombre && hecho.id_estudiante_nombre.toLowerCase().includes(searchTerm)) ||
-            (hecho.id_materia_nombre_materia && hecho.id_materia_nombre_materia.toLowerCase().includes(searchTerm)) ||
-            (hecho.id_docente_nombre_docente && hecho.id_docente_nombre_docente.toLowerCase().includes(searchTerm)) ||
-            (hecho.id_programa_nombre_programa && hecho.id_programa_nombre_programa.toLowerCase().includes(searchTerm)) ||
-            (hecho.estatus && hecho.estatus.toLowerCase().includes(searchTerm));
+    const rows = document.querySelectorAll('.data-table tbody tr');
+    let visibleCount = 0;
 
-        // Filtro de estatus
-        const estatusMatch = !estatusFilter || hecho.estatus === estatusFilter;
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 0) {
+            const estudiante = cells[1].textContent.toLowerCase();
+            const materia = cells[2].textContent.toLowerCase();
+            const docente = cells[3].textContent.toLowerCase();
+            const programa = cells[5].textContent.toLowerCase();
+            const calificacion = parseFloat(cells[6].textContent);
+            const estatus = cells[7].textContent;
 
-        // Filtro de calificación
-        const calificacionMatch = hecho.calificacion >= calificacionMin && hecho.calificacion <= calificacionMax;
+            const matchesSearch = estudiante.includes(searchTerm) ||
+                                materia.includes(searchTerm) ||
+                                docente.includes(searchTerm) ||
+                                programa.includes(searchTerm);
 
-        return searchMatch && estatusMatch && calificacionMatch;
+            const matchesEstatus = !estatusFilter || estatus === estatusFilter;
+            const matchesCalificacion = calificacion >= calificacionMin && calificacion <= calificacionMax;
+
+            if (matchesSearch && matchesEstatus && matchesCalificacion) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
     });
 
-    // Resetear paginación
-    currentHechosPage = 1;
-    totalHechosPages = Math.ceil(filteredData.length / 20);
-
-    // Mostrar resultados filtrados
-    displayHechos(filteredData, filteredData.length, 1);
-}
-
-function generateHechosPageNumbers(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-
-    let pagination = '<div class="pagination">';
-
-    // Botón anterior
-    pagination += `<button onclick="loadHechosData(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i> Anterior
-    </button>`;
-
-    // Números de página
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-
-    if (startPage > 1) {
-        pagination += `<button onclick="loadHechosData(1)">1</button>`;
-        if (startPage > 2) {
-            pagination += `<span>...</span>`;
-        }
+    // Actualizar contador si existe
+    const counter = document.querySelector('.results-info');
+    if (counter) {
+        counter.textContent = `Mostrando ${visibleCount} registros`;
     }
-
-    for (let i = startPage; i <= endPage; i++) {
-        pagination += `<button onclick="loadHechosData(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            pagination += `<span>...</span>`;
-        }
-        pagination += `<button onclick="loadHechosData(${totalPages})">${totalPages}</button>`;
-    }
-
-    // Botón siguiente
-    pagination += `<button onclick="loadHechosData(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        Siguiente <i class="fas fa-chevron-right"></i>
-    </button>`;
-
-    pagination += '</div>';
-    return pagination;
-}
-
-function generatePageNumbers(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-
-    let pagination = '<div class="pagination">';
-
-    // Botón anterior
-    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i> Anterior
-    </button>`;
-
-    // Números de página
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-
-    if (startPage > 1) {
-        pagination += `<button onclick="loadDimension('${currentDimensionName}', 1)">1</button>`;
-        if (startPage > 2) {
-            pagination += `<span>...</span>`;
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            pagination += `<span>...</span>`;
-        }
-        pagination += `<button onclick="loadDimension('${currentDimensionName}', ${totalPages})">${totalPages}</button>`;
-    }
-
-    // Botón siguiente
-    pagination += `<button onclick="loadDimension('${currentDimensionName}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        Siguiente <i class="fas fa-chevron-right"></i>
-    </button>`;
-
-    pagination += '</div>';
-    return pagination;
-}
-
-function generateAnalysisPageNumbers(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-
-    let pagination = '<div class="pagination">';
-
-    // Botón anterior
-    pagination += `<button onclick="loadAnalysisPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i> Anterior
-    </button>`;
-
-    // Números de página
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-
-    if (startPage > 1) {
-        pagination += `<button onclick="loadAnalysisPage(1)">1</button>`;
-        if (startPage > 2) {
-            pagination += `<span>...</span>`;
-        }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        pagination += `<button onclick="loadAnalysisPage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            pagination += `<span>...</span>`;
-        }
-        pagination += `<button onclick="loadAnalysisPage(${totalPages})">${totalPages}</button>`;
-    }
-
-    // Botón siguiente
-    pagination += `<button onclick="loadAnalysisPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        Siguiente <i class="fas fa-chevron-right"></i>
-    </button>`;
-
-    pagination += '</div>';
-    return pagination;
 }
 
 // FUNCIONES UTILITARIAS
 function showLoading(show) {
-    if (elements.loading) {
-        elements.loading.classList.toggle('show', show);
-    }
+    const spinner = document.getElementById('loading-spinner');
+    spinner.style.display = show ? 'flex' : 'none';
 }
 
 function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast toast-${type}`;
     toast.innerHTML = `
-        <i class="${getToastIcon(type)}"></i>
-        <span>${message}</span>
+        <div class="toast-content">
+            <i class="fas ${getToastIcon(type)}"></i>
+            <span>${message}</span>
+        </div>
     `;
 
-    elements.toastContainer.appendChild(toast);
-
-    // Remover después de 3 segundos
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
     setTimeout(() => {
-        toast.remove();
+        toast.classList.remove('show');
+        setTimeout(() => container.removeChild(toast), 300);
     }, 3000);
 }
 
 function getToastIcon(type) {
-    const icons = {
-        'success': 'fas fa-check-circle',
-        'error': 'fas fa-exclamation-circle',
-        'info': 'fas fa-info-circle'
-    };
-    return icons[type] || icons.info;
+    switch(type) {
+        case 'success': return 'fa-check-circle';
+        case 'error': return 'fa-exclamation-circle';
+        case 'warning': return 'fa-exclamation-triangle';
+        default: return 'fa-info-circle';
+    }
+}
+
+// Función para recargar datos de autocomplete después de operaciones CRUD
+async function reloadAutocompleteData() {
+    try {
+        await Promise.all([
+            loadFormData(),
+            loadHechoModalData(),
+            loadAutocompleteOptions()
+        ]);
+    } catch (error) {
+        console.error('Error reloading autocomplete data:', error);
+    }
+}
+
+// Estado global para datos de autocomplete
+let autocompleteData = {
+    estudiantes: [],
+    materias: [],
+    docentes: [],
+    programas: [],
+    tiempos: [],
+    generos: [],
+    semestres: [],
+    departamentos: [],
+    niveles_materia: [],
+    grados_academicos: [],
+    niveles_programa: [],
+    facultades: [],
+    coordinadores: []
+};
+
+// Función para cargar datos de autocomplete
+async function loadAutocompleteOptions() {
+    try {
+        const endpoints = [
+            { key: 'generos', url: `${API_BASE_URL}/autocomplete/generos/` },
+            { key: 'semestres', url: `${API_BASE_URL}/autocomplete/semestres/` },
+            { key: 'departamentos', url: `${API_BASE_URL}/autocomplete/departamentos/` },
+            { key: 'niveles_materia', url: `${API_BASE_URL}/autocomplete/niveles-materia/` },
+            { key: 'grados_academicos', url: `${API_BASE_URL}/autocomplete/grados-academicos/` },
+            { key: 'niveles_programa', url: `${API_BASE_URL}/autocomplete/niveles-programa/` },
+            { key: 'facultades', url: `${API_BASE_URL}/autocomplete/facultades/` },
+            { key: 'coordinadores', url: `${API_BASE_URL}/autocomplete/coordinadores/` }
+        ];
+
+        const responses = await Promise.all(
+            endpoints.map(endpoint => fetch(endpoint.url))
+        );
+
+        const data = await Promise.all(
+            responses.map(response => response.json())
+        );
+
+        endpoints.forEach((endpoint, index) => {
+            autocompleteData[endpoint.key] = data[index];
+        });
+
+    } catch (error) {
+        console.error('Error loading autocomplete options:', error);
+    }
+}
+
+// Función para generar campos de autocomplete
+function generateAutocompleteField(fieldId, label, autocompleteType, required = '', initialValue = '') {
+    return `
+        <div class="form-group">
+            <label for="${fieldId}">${label}</label>
+            <div class="autocomplete-container">
+                <input type="text" id="${fieldId}_search" placeholder="Buscar ${label.toLowerCase()}..." autocomplete="off" value="${initialValue}">
+                <input type="hidden" id="${fieldId}" name="${fieldId.replace('create_', '').replace('edit_', '')}" ${required} value="${initialValue}">
+                <div class="autocomplete-dropdown" id="${fieldId}_dropdown"></div>
+            </div>
+        </div>
+    `;
+}
+
+// Función para configurar autocompletes en formularios de dimensiones
+function setupDimensionAutocomplete(fieldId, autocompleteType) {
+    let data = [];
+    let valueField = 'value';
+    let textField = 'label';
+
+    // Obtener datos según el tipo
+    switch (autocompleteType) {
+        case 'generos':
+            data = autocompleteData.generos;
+            break;
+        case 'semestres':
+            data = autocompleteData.semestres;
+            break;
+        case 'departamentos':
+            data = autocompleteData.departamentos;
+            break;
+        case 'niveles_materia':
+            data = autocompleteData.niveles_materia;
+            break;
+        case 'grados_academicos':
+            data = autocompleteData.grados_academicos;
+            break;
+        case 'niveles_programa':
+            data = autocompleteData.niveles_programa;
+            break;
+        case 'facultades':
+            data = autocompleteData.facultades;
+            break;
+        case 'coordinadores':
+            data = autocompleteData.coordinadores;
+            break;
+        case 'programas':
+            data = autocompleteData.programas;
+            valueField = 'nombre_programa';
+            textField = 'nombre_programa';
+            break;
+    }
+
+    setupAutocomplete(fieldId, data, valueField, textField);
+}
+
+// Función para crear un nuevo registro
+async function createRecord(formData) {
+    try {
+        showLoading(true);
+
+        const response = await fetch(`${API_BASE_URL}/dimension/${currentDimensionName}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('Registro creado exitosamente', 'success');
+            closeCreateDimensionModal();
+            loadDimensionData(currentDimensionName);
+
+            // Recargar datos de autocomplete
+            await loadAutocompleteOptions();
+
+            // Recargar datos para el formulario principal si es necesario
+            if (['estudiantes', 'materias', 'docentes', 'tiempos', 'programas'].includes(currentDimensionName)) {
+                loadFormData();
+                loadHechoModalData();
+            }
+        } else {
+            throw new Error(data.message || 'Error al crear el registro');
+        }
+
+    } catch (error) {
+        console.error('Error creating record:', error);
+        showToast('Error al crear el registro: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Función para actualizar un registro existente
+async function updateRecord(formData) {
+    try {
+        showLoading(true);
+
+        const response = await fetch(`${API_BASE_URL}/dimension/${currentDimensionName}/${currentEditData.id}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('Registro actualizado exitosamente', 'success');
+            closeEditModal();
+            loadDimensionData(currentDimensionName);
+
+            // Recargar datos de autocomplete
+            await loadAutocompleteOptions();
+
+            // Recargar datos para el formulario principal si es necesario
+            if (['estudiantes', 'materias', 'docentes', 'tiempos', 'programas'].includes(currentDimensionName)) {
+                loadFormData();
+                loadHechoModalData();
+            }
+        } else {
+            throw new Error(data.message || 'Error al actualizar el registro');
+        }
+
+    } catch (error) {
+        console.error('Error updating record:', error);
+        showToast('Error al actualizar el registro: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
 }

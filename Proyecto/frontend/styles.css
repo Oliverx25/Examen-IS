@@ -989,59 +989,82 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9rem;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.pagination button:hover {
+.pagination button:hover:not(:disabled) {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.pagination button:disabled {
+    background: var(--bg-light);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.pagination button:disabled:hover {
+    background: var(--bg-light);
+    color: var(--text-muted);
+    transform: none;
+    box-shadow: none;
 }
 
 .pagination button.active {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+    font-weight: 600;
 }
 
-.pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.pagination button:disabled:hover {
-    background: var(--bg-white);
-    color: var(--text-primary);
-    border-color: var(--border);
+.pagination button.active:hover {
+    background: var(--primary);
+    color: white;
+    transform: none;
 }
 
 .pagination-dots {
-    padding: 0 0.5rem;
+    padding: 0.5rem;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-weight: bold;
 }
 
-/* Responsive paginación */
+/* Botones de navegación especiales */
+.pagination button[title="Primera página"],
+.pagination button[title="Última página"] {
+    font-weight: 600;
+}
+
+.pagination button[title="Página anterior"],
+.pagination button[title="Página siguiente"] {
+    font-weight: 600;
+}
+
 @media (max-width: 768px) {
     .pagination-container {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+        padding: 1rem;
     }
 
-    .pagination-controls {
-        flex-wrap: wrap;
-        justify-content: center;
+    .pagination {
+        gap: 0.25rem;
     }
 
-    .pagination-numbers {
-        order: 2;
-        margin: 0.5rem 0;
-    }
-
-    .pagination-btn {
-        padding: 0.4rem 0.6rem;
+    .pagination button {
+        padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
-        min-width: 2rem;
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .pagination-dots {
+        padding: 0.4rem;
     }
 }
 

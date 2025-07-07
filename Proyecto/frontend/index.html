@@ -239,26 +239,6 @@
                     </form>
                 </div>
 
-                <!-- Controles de filtro para la tabla -->
-                <div class="hechos-controls">
-                    <button class="btn btn-primary" onclick="openCreateHechoModal()">
-                        <i class="fas fa-plus"></i> Nuevo Registro
-                    </button>
-                    <div class="filter-controls">
-                        <div class="search-box">
-                            <input type="text" id="hechos-search" placeholder="Buscar en registros..." onkeyup="filterHechos()">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <select id="estatus-filter" onchange="filterHechos()">
-                            <option value="">Todos los estatus</option>
-                            <option value="Aprobado">Aprobado</option>
-                            <option value="Reprobado">Reprobado</option>
-                        </select>
-                        <input type="number" id="calificacion-min" placeholder="Calif. mín" onchange="filterHechos()">
-                        <input type="number" id="calificacion-max" placeholder="Calif. máx" onchange="filterHechos()">
-                    </div>
-                </div>
-
                 <div class="hechos-content" id="hechos-content">
                     <div class="placeholder-message">
                         <i class="fas fa-table"></i>
@@ -350,10 +330,10 @@
 
     <!-- Modal para editar dimensiones -->
     <div class="modal-overlay" id="edit-modal-overlay">
-        <div class="modal">
+        <div class="modal modal-large">
             <div class="modal-header">
                 <h3 id="modal-title">
-                    <i class="fas fa-edit"></i> Editar Registro
+                    <i class="fas fa-edit"></i> Editar Dimensión
                 </h3>
                 <button class="modal-close" onclick="closeEditModal()">
                     <i class="fas fa-times"></i>
@@ -365,7 +345,7 @@
                         <!-- Los campos se generarán dinámicamente -->
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-success">
                             <i class="fas fa-save"></i> Guardar Cambios
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
@@ -379,10 +359,10 @@
 
     <!-- Modal para crear nuevas dimensiones -->
     <div class="modal-overlay" id="create-dimension-modal-overlay">
-        <div class="modal">
+        <div class="modal modal-large">
             <div class="modal-header">
                 <h3 id="create-dimension-modal-title">
-                    <i class="fas fa-plus"></i> Crear Nuevo Registro
+                    <i class="fas fa-plus"></i> Crear Nueva Dimensión
                 </h3>
                 <button class="modal-close" onclick="closeCreateDimensionModal()">
                     <i class="fas fa-times"></i>
@@ -395,7 +375,7 @@
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Crear Registro
+                            <i class="fas fa-save"></i> Crear
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="closeCreateDimensionModal()">
                             <i class="fas fa-times"></i> Cancelar

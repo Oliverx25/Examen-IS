@@ -4,38 +4,56 @@ from . import views
 app_name = 'analytics'
 
 urlpatterns = [
-    # Endpoints para cargar datos
-    path('load-data/', views.load_data, name='load-data'),
+    # ===========================
+    # ENDPOINTS PARA DASHBOARD
+    # ===========================
+    path('analytics/dashboard/', views.dashboard_summary, name='dashboard-stats'),
 
-    # Endpoints para análisis - Preguntas de negocio
+    # ===========================
+    # ENDPOINTS PARA ANÁLISIS
+    # ===========================
     path('analytics/tasa-reprobacion/', views.tasa_reprobacion, name='tasa-reprobacion'),
     path('analytics/materias-sobresalientes/', views.materias_sobresalientes, name='materias-sobresalientes'),
     path('analytics/evolucion-promedio/', views.evolucion_promedio, name='evolucion-promedio'),
-    path('analytics/dashboard/', views.dashboard_summary, name='dashboard-summary'),
 
     # ===========================
-    # CRUD COMPLETO PARA DIMENSIONES
+    # ENDPOINTS PARA AUTOCOMPLETE
     # ===========================
+    path('autocomplete/generos/', views.get_generos, name='autocomplete-generos'),
+    path('autocomplete/semestres/', views.get_semestres, name='autocomplete-semestres'),
+    path('autocomplete/departamentos/', views.get_departamentos, name='autocomplete-departamentos'),
+    path('autocomplete/niveles-materia/', views.get_niveles_materia, name='autocomplete-niveles-materia'),
+    path('autocomplete/grados-academicos/', views.get_grados_academicos, name='autocomplete-grados-academicos'),
+    path('autocomplete/niveles-programa/', views.get_niveles_programa, name='autocomplete-niveles-programa'),
+    path('autocomplete/facultades/', views.get_facultades, name='autocomplete-facultades'),
+    path('autocomplete/coordinadores/', views.get_coordinadores, name='autocomplete-coordinadores'),
 
-    # CREATE y LIST endpoints (aceptan GET y POST en la misma ruta)
+    # ===========================
+    # ENDPOINT PARA CARGA DE DATOS
+    # ===========================
+    path('load-data/', views.load_data, name='load-data'),
+
+    # ===========================
+    # CRUD PARA DIMENSIONES
+    # ===========================
     path('dimension/estudiante/', views.EstudianteListView.as_view(), name='estudiante-list'),
-    path('dimension/materia/', views.MateriaListView.as_view(), name='materia-list'),
-    path('dimension/docente/', views.DocenteListView.as_view(), name='docente-list'),
-    path('dimension/programa/', views.ProgramaListView.as_view(), name='programa-list'),
-    path('dimension/tiempo/', views.TiempoListView.as_view(), name='tiempo-list'),
-
-    # UPDATE endpoints
     path('dimension/estudiante/<int:id_estudiante>/', views.EstudianteUpdateView.as_view(), name='estudiante-update'),
-    path('dimension/materia/<int:id_materia>/', views.MateriaUpdateView.as_view(), name='materia-update'),
-    path('dimension/docente/<int:id_docente>/', views.DocenteUpdateView.as_view(), name='docente-update'),
-    path('dimension/programa/<int:id_programa>/', views.ProgramaUpdateView.as_view(), name='programa-update'),
-    path('dimension/tiempo/<int:id_tiempo>/', views.TiempoUpdateView.as_view(), name='tiempo-update'),
-
-    # DELETE endpoints
     path('dimension/estudiante/<int:id_estudiante>/delete/', views.delete_estudiante, name='estudiante-delete'),
+
+    path('dimension/materia/', views.MateriaListView.as_view(), name='materia-list'),
+    path('dimension/materia/<int:id_materia>/', views.MateriaUpdateView.as_view(), name='materia-update'),
     path('dimension/materia/<int:id_materia>/delete/', views.delete_materia, name='materia-delete'),
+
+    path('dimension/docente/', views.DocenteListView.as_view(), name='docente-list'),
+    path('dimension/docente/<int:id_docente>/', views.DocenteUpdateView.as_view(), name='docente-update'),
     path('dimension/docente/<int:id_docente>/delete/', views.delete_docente, name='docente-delete'),
+
+    path('dimension/programa/', views.ProgramaListView.as_view(), name='programa-list'),
+    path('dimension/programa/<int:id_programa>/', views.ProgramaUpdateView.as_view(), name='programa-update'),
     path('dimension/programa/<int:id_programa>/delete/', views.delete_programa, name='programa-delete'),
+
+    path('dimension/tiempo/', views.TiempoListView.as_view(), name='tiempo-list'),
+    path('dimension/tiempo/<int:id_tiempo>/', views.TiempoUpdateView.as_view(), name='tiempo-update'),
     path('dimension/tiempo/<int:id_tiempo>/delete/', views.delete_tiempo, name='tiempo-delete'),
 
     # ===========================

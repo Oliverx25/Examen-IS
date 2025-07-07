@@ -448,3 +448,92 @@ def dashboard_summary(request):
         return Response({
             'error': f'Error en consulta: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ===========================
+# ENDPOINTS PARA AUTOCOMPLETE
+# ===========================
+
+@api_view(['GET'])
+def get_generos(request):
+    """GET /api/autocomplete/generos/ - Obtener géneros únicos"""
+    try:
+        generos = DimEstudiante.objects.values_list('genero', flat=True).distinct().order_by('genero')
+        generos_list = [{'value': genero, 'label': genero} for genero in generos if genero]
+        return Response(generos_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener géneros: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_semestres(request):
+    """GET /api/autocomplete/semestres/ - Obtener semestres únicos"""
+    try:
+        semestres = DimEstudiante.objects.values_list('semestre_ingreso', flat=True).distinct().order_by('semestre_ingreso')
+        semestres_list = [{'value': semestre, 'label': semestre} for semestre in semestres if semestre]
+        return Response(semestres_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener semestres: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_departamentos(request):
+    """GET /api/autocomplete/departamentos/ - Obtener departamentos únicos"""
+    try:
+        # Obtener departamentos de materias y docentes
+        dept_materias = DimMateria.objects.values_list('departamento', flat=True).distinct()
+        dept_docentes = DimDocente.objects.values_list('departamento_asignado', flat=True).distinct()
+
+        # Combinar y eliminar duplicados
+        departamentos = set(list(dept_materias) + list(dept_docentes))
+        departamentos_list = [{'value': dept, 'label': dept} for dept in sorted(departamentos) if dept]
+        return Response(departamentos_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener departamentos: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_niveles_materia(request):
+    """GET /api/autocomplete/niveles-materia/ - Obtener niveles de materia únicos"""
+    try:
+        niveles = DimMateria.objects.values_list('nivel', flat=True).distinct().order_by('nivel')
+        niveles_list = [{'value': nivel, 'label': nivel} for nivel in niveles if nivel]
+        return Response(niveles_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener niveles de materia: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_grados_academicos(request):
+    """GET /api/autocomplete/grados-academicos/ - Obtener grados académicos únicos"""
+    try:
+        grados = DimDocente.objects.values_list('grado_academico', flat=True).distinct().order_by('grado_academico')
+        grados_list = [{'value': grado, 'label': grado} for grado in grados if grado]
+        return Response(grados_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener grados académicos: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_niveles_programa(request):
+    """GET /api/autocomplete/niveles-programa/ - Obtener niveles de programa únicos"""
+    try:
+        niveles = DimPrograma.objects.values_list('nivel', flat=True).distinct().order_by('nivel')
+        niveles_list = [{'value': nivel, 'label': nivel} for nivel in niveles if nivel]
+        return Response(niveles_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener niveles de programa: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_facultades(request):
+    """GET /api/autocomplete/facultades/ - Obtener facultades únicas"""
+    try:
+        facultades = DimPrograma.objects.values_list('facultad', flat=True).distinct().order_by('facultad')
+        facultades_list = [{'value': facultad, 'label': facultad} for facultad in facultades if facultad]
+        return Response(facultades_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener facultades: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_coordinadores(request):
+    """GET /api/autocomplete/coordinadores/ - Obtener coordinadores únicos"""
+    try:
+        coordinadores = DimPrograma.objects.values_list('coordinador', flat=True).distinct().order_by('coordinador')
+        coordinadores_list = [{'value': coord, 'label': coord} for coord in coordinadores if coord]
+        return Response(coordinadores_list, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': f'Error al obtener coordinadores: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
