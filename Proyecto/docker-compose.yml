@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # Base de datos PostgreSQL
   db:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: datawarehouse_db
     environment:
       POSTGRES_DB: datawarehouse
@@ -11,48 +9,85 @@ services:
       POSTGRES_PASSWORD: dw_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/scripts:/docker-entrypoint-initdb.d
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     networks:
       - dw_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dw_user -d datawarehouse"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Backend Django
+  # Backend Django con OLAP
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: datawarehouse_backend
     environment:
       - DEBUG=1
-      - SECRET_KEY=django-insecure-development-key-only
-      - DATABASE_NAME=datawarehouse
-      - DATABASE_USER=dw_user
-      - DATABASE_PASSWORD=dw_password
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-    ports:
-      - "8000:8000"
+      - DATABASE_URL=postgresql://dw_user:dw_password@db:5432/datawarehouse
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     volumes:
       - ./backend:/app
+      - ./olap:/app/olap
+    ports:
+      - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - dw_network
+    command: >
+      sh -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        python manage.py runserver 0.0.0.0:8000
+      "
 
-  # Frontend (servidor HTTP simple)
+  # Frontend con interfaz OLAP
   frontend:
-    build: ./frontend
+    image: nginx:alpine
     container_name: datawarehouse_frontend
-    ports:
-      - "3000:3000"
     volumes:
-      - ./frontend:/usr/share/nginx/html:ro
+      - ./frontend:/usr/share/nginx/html
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "3000:80"
     depends_on:
       - backend
     networks:
       - dw_network
 
+  # Servicio de análisis OLAP (opcional para procesamiento pesado)
+  olap_service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: datawarehouse_olap
+    environment:
+      - DATABASE_URL=postgresql://dw_user:dw_password@db:5432/datawarehouse
+      - OLAP_MODE=1
+    volumes:
+      - ./olap:/app/olap
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - dw_network
+    command: >
+      sh -c "
+        echo 'Servicio OLAP iniciado' &&
+        tail -f /dev/null
+      "
+
 volumes:
   postgres_data:
+    driver: local
 
 networks:
   dw_network:

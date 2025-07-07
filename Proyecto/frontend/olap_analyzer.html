@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador OLAP - Cubo Multidimensional</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .olap-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .operation-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .operation-header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .operation-body {
+            padding: 20px;
+            display: none;
+        }
+
+        .operation-body.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .result-container {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .result-table th,
+        .result-table td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        .result-table th {
+            background: var(--primary);
+            color: white;
+        }
+
+        .mdx-query {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+
+        .schema-tree {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .dimension-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: var(--bg-light);
+            border-radius: 6px;
+        }
+
+        .dimension-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .measure-item {
+            display: inline-block;
+            background: var(--success);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 0.9em;
+        }
+
+        .chevron {
+            transition: transform 0.3s;
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        .filters-container {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .filter-row input,
+        .filter-row select {
+            flex: 1;
+        }
+
+        .filter-operator {
+            flex: 0 0 80px !important;
+        }
+
+        .remove-filter {
+            background: var(--error);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+
+        .example-button {
+            background: var(--info);
+            color: gray;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .example-button:hover {
+            background: var(--info-dark);
+        }
+
+        .buttons-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--bg-light);
+            border-radius: 6px;
+        }
+
+        .autocomplete-hint {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="olap-container">
+        <h1>🧊 Analizador OLAP - Cubo Multidimensional</h1>
+        <p class="subtitle">Análisis multidimensional del Data Warehouse académico con autocompletado inteligente</p>
+
+        <!-- Esquema del Cubo -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('schema')">
+                <span>📊 Esquema del Cubo OLAP</span>
+                <span class="chevron" id="schema-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="schema-body">
+                <button class="btn btn-primary" onclick="loadCubeSchema()">Cargar Esquema del Cubo</button>
+                <div id="schema-container"></div>
+            </div>
+        </div>
+
+        <!-- Roll-up -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('rollup')">
+                <span>📈 Roll-up (Agregación)</span>
+                <span class="chevron" id="rollup-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="rollup-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExampleRollup()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Los campos tienen autocompletado. Escribe para ver sugerencias.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Dimensión:</label>
+                        <select id="rollup-dimension">
+                            <option value="estudiante">Estudiante</option>
+                            <option value="materia">Materia</option>
+                            <option value="docente">Docente</option>
+                            <option value="programa">Programa</option>
+                            <option value="tiempo">Tiempo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel Inicial (Detallado):</label>
+                        <input type="text" id="rollup-from" placeholder="ej: nombre">
+                        <div class="autocomplete-hint">Prueba: nombre, programa_academico</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel Final (General):</label>
+                        <input type="text" id="rollup-to" placeholder="ej: genero">
+                        <div class="autocomplete-hint">Prueba: genero, semestre_ingreso</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Medidas (separadas por coma):</label>
+                        <input type="text" id="rollup-measures" placeholder="calificacion, creditos_obtenidos">
+                        <div class="autocomplete-hint">Prueba: calificacion, creditos_obtenidos, estudiantes</div>
+                    </div>
+                </div>
+
+                <div class="filters-container">
+                    <h4>Filtros Opcionales</h4>
+                    <div id="rollup-filters"></div>
+                    <button class="btn btn-secondary" onclick="addFilter('rollup')">+ Agregar Filtro</button>
+                </div>
+
+                <button class="btn btn-primary" onclick="executeRollup()">Ejecutar Roll-up</button>
+                <div id="rollup-result"></div>
+            </div>
+        </div>
+
+        <!-- Drill-down -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('drilldown')">
+                <span>🔍 Drill-down (Desagregación)</span>
+                <span class="chevron" id="drilldown-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="drilldown-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExampleDrilldown()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Inicia con un nivel general y desagrega hacia detalles específicos.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Dimensión:</label>
+                        <select id="drilldown-dimension">
+                            <option value="estudiante">Estudiante</option>
+                            <option value="materia">Materia</option>
+                            <option value="docente">Docente</option>
+                            <option value="programa">Programa</option>
+                            <option value="tiempo">Tiempo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel Inicial (General):</label>
+                        <input type="text" id="drilldown-from" placeholder="ej: departamento">
+                        <div class="autocomplete-hint">Prueba: departamento, nivel, grado_academico</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel Final (Detallado):</label>
+                        <input type="text" id="drilldown-to" placeholder="ej: nombre_materia">
+                        <div class="autocomplete-hint">Prueba: nombre_materia, nombre_docente, nombre</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Medidas (separadas por coma):</label>
+                        <input type="text" id="drilldown-measures" placeholder="calificacion">
+                        <div class="autocomplete-hint">Prueba: calificacion, creditos_obtenidos</div>
+                    </div>
+                </div>
+
+                <div class="filters-container">
+                    <h4>Filtros Opcionales</h4>
+                    <div id="drilldown-filters"></div>
+                    <button class="btn btn-secondary" onclick="addFilter('drilldown')">+ Agregar Filtro</button>
+                </div>
+
+                <button class="btn btn-primary" onclick="executeDrilldown()">Ejecutar Drill-down</button>
+                <div id="drilldown-result"></div>
+            </div>
+        </div>
+
+        <!-- Slice -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('slice')">
+                <span>🍰 Slice (Corte)</span>
+                <span class="chevron" id="slice-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="slice-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExampleSlice()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Fija una dimensión en un valor específico y analiza las demás.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Dimensión Fija:</label>
+                        <input type="text" id="slice-dimension" placeholder="ej: dim_tiempo.anio">
+                        <div class="autocomplete-hint">Prueba: dim_tiempo.anio, dim_estudiante.genero</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Valor Fijo:</label>
+                        <input type="text" id="slice-value" placeholder="ej: 2024">
+                        <div class="autocomplete-hint">Prueba: 2024, Masculino, Femenino</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dimensiones en Filas (separadas por coma):</label>
+                        <input type="text" id="slice-rows" placeholder="dim_estudiante.genero">
+                        <div class="autocomplete-hint">Prueba: dim_estudiante.genero, dim_materia.departamento</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dimensiones en Columnas (separadas por coma):</label>
+                        <input type="text" id="slice-cols" placeholder="dim_materia.departamento">
+                        <div class="autocomplete-hint">Prueba: dim_materia.departamento, dim_programa.nivel</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Medidas (separadas por coma):</label>
+                        <input type="text" id="slice-measures" placeholder="calificacion, creditos_obtenidos">
+                        <div class="autocomplete-hint">Prueba: calificacion, creditos_obtenidos</div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="executeSlice()">Ejecutar Slice</button>
+                <div id="slice-result"></div>
+            </div>
+        </div>
+
+        <!-- Dice -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('dice')">
+                <span>🎲 Dice (Dados)</span>
+                <span class="chevron" id="dice-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="dice-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExampleDice()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Aplica múltiples filtros simultáneamente para análisis específicos.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Dimensiones en Filas (separadas por coma):</label>
+                        <input type="text" id="dice-rows" placeholder="dim_materia.departamento">
+                        <div class="autocomplete-hint">Prueba: dim_materia.departamento, dim_estudiante.genero</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Dimensiones en Columnas (separadas por coma):</label>
+                        <input type="text" id="dice-cols" placeholder="dim_estudiante.genero">
+                        <div class="autocomplete-hint">Prueba: dim_estudiante.genero, dim_programa.nivel</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Medidas (separadas por coma):</label>
+                        <input type="text" id="dice-measures" placeholder="calificacion">
+                        <div class="autocomplete-hint">Prueba: calificacion, creditos_obtenidos</div>
+                    </div>
+                </div>
+
+                <div class="filters-container">
+                    <h4>Filtros (Múltiples Dimensiones)</h4>
+                    <div id="dice-filters"></div>
+                    <button class="btn btn-secondary" onclick="addFilter('dice')">+ Agregar Filtro</button>
+                </div>
+
+                <button class="btn btn-primary" onclick="executeDice()">Ejecutar Dice</button>
+                <div id="dice-result"></div>
+            </div>
+        </div>
+
+        <!-- Pivot -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('pivot')">
+                <span>🔄 Pivot (Rotación)</span>
+                <span class="chevron" id="pivot-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="pivot-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExamplePivot()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Intercambia filas y columnas para nuevas perspectivas de análisis.</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Filas Actuales (separadas por coma):</label>
+                        <input type="text" id="pivot-current-rows" placeholder="dim_estudiante.genero">
+                        <div class="autocomplete-hint">Prueba: dim_estudiante.genero, dim_materia.departamento</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Columnas Actuales (separadas por coma):</label>
+                        <input type="text" id="pivot-current-cols" placeholder="dim_materia.departamento">
+                        <div class="autocomplete-hint">Prueba: dim_materia.departamento, dim_tiempo.anio</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nuevas Filas (separadas por coma):</label>
+                        <input type="text" id="pivot-new-rows" placeholder="dim_materia.departamento">
+                        <div class="autocomplete-hint">Prueba: dim_materia.departamento, dim_tiempo.anio</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Nuevas Columnas (separadas por coma):</label>
+                        <input type="text" id="pivot-new-cols" placeholder="dim_estudiante.genero">
+                        <div class="autocomplete-hint">Prueba: dim_estudiante.genero, dim_programa.nivel</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Medidas (separadas por coma):</label>
+                        <input type="text" id="pivot-measures" placeholder="calificacion, creditos_obtenidos">
+                        <div class="autocomplete-hint">Prueba: calificacion, creditos_obtenidos</div>
+                    </div>
+                </div>
+
+                <div class="filters-container">
+                    <h4>Filtros Opcionales</h4>
+                    <div id="pivot-filters"></div>
+                    <button class="btn btn-secondary" onclick="addFilter('pivot')">+ Agregar Filtro</button>
+                </div>
+
+                <button class="btn btn-primary" onclick="executePivot()">Ejecutar Pivot</button>
+                <div id="pivot-result"></div>
+            </div>
+        </div>
+
+        <!-- Consulta MDX Personalizada -->
+        <div class="operation-card">
+            <div class="operation-header" onclick="toggleOperation('custom')">
+                <span>📝 Consulta MDX Personalizada</span>
+                <span class="chevron" id="custom-chevron">▼</span>
+            </div>
+            <div class="operation-body" id="custom-body">
+                <div class="buttons-row">
+                    <button class="example-button" onclick="loadExampleCustomMDX()">📋 Cargar Ejemplo</button>
+                    <span class="autocomplete-hint">💡 Escribe consultas MDX personalizadas o SQL equivalentes.</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Consulta MDX:</label>
+                    <textarea id="custom-mdx" rows="4" placeholder="SELECT {[Measures].[calificacion]} ON COLUMNS, {[estudiante].Members} ON ROWS FROM [cubo_academico]"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Consulta SQL Equivalente:</label>
+                    <textarea id="custom-sql" rows="6" placeholder="SELECT AVG(calificacion) FROM hechos_rendimiento_academico h JOIN dim_estudiante e ON h.id_estudiante = e.id_estudiante GROUP BY e.nombre_completo"></textarea>
+                </div>
+
+                <button class="btn btn-primary" onclick="executeCustomMDX()">Ejecutar Consulta Personalizada</button>
+                <div id="custom-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="olap_analyzer.js"></script>
+</body>
+</html>

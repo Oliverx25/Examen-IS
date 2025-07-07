@@ -96,6 +96,25 @@ body {
     color: white;
 }
 
+/* Enlace OLAP especial */
+.nav-btn.olap-link {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.nav-btn.olap-link:hover {
+    background: linear-gradient(135deg, #7c3aed, #9333ea);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+}
+
+.nav-btn.olap-link i {
+    color: white;
+}
+
 /* Main Content */
 .main-content {
     padding: 2rem 0;

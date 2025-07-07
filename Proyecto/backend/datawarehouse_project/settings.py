@@ -79,16 +79,26 @@ WSGI_APPLICATION = 'datawarehouse_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DATABASE_NAME', default='datawarehouse'),
-        'USER': config('DATABASE_USER', default='dw_user'),
-        'PASSWORD': config('DATABASE_PASSWORD', default='dw_password'),
-        'HOST': config('DATABASE_HOST', default='localhost'),
-        'PORT': config('DATABASE_PORT', default='5432'),
+import dj_database_url
+
+# Configuración de base de datos con soporte para DATABASE_URL
+DATABASE_URL = config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DATABASE_NAME', default='datawarehouse'),
+            'USER': config('DATABASE_USER', default='dw_user'),
+            'PASSWORD': config('DATABASE_PASSWORD', default='dw_password'),
+            'HOST': config('DATABASE_HOST', default='db'),
+            'PORT': config('DATABASE_PORT', default='5432'),
+        }
+    }
 
 
 # Password validation

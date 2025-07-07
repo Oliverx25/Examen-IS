@@ -537,3 +537,341 @@ def get_coordinadores(request):
         return Response(coordinadores_list, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'error': f'Error al obtener coordinadores: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+# =============================================================================
+# ENDPOINTS OLAP - CUBO MULTIDIMENSIONAL Y CONSULTAS MDX
+# =============================================================================
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'olap'))
+
+@api_view(['POST'])
+def olap_rollup(request):
+    """
+    Operación Roll-up: Agrega datos de un nivel detallado a uno más general
+
+    Body: {
+        "dimension": "estudiante",
+        "from_level": "nombre_completo",
+        "to_level": "genero",
+        "measures": ["calificacion", "creditos_obtenidos"],
+        "filters": {"dim_tiempo.anio": "2024"}
+    }
+    """
+    try:
+        from olap.mdx_engine import MDXEngine
+
+        data = request.data
+
+        # Validar parámetros requeridos
+        required_fields = ['dimension', 'from_level', 'to_level', 'measures']
+        for field in required_fields:
+            if field not in data:
+                return Response({
+                    'error': f'Campo requerido: {field}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Crear motor MDX
+        mdx_engine = MDXEngine(connection)
+
+        # Ejecutar roll-up
+        result = mdx_engine.roll_up(
+            dimension=data['dimension'],
+            from_level=data['from_level'],
+            to_level=data['to_level'],
+            measures=data['measures'],
+            filters=data.get('filters')
+        )
+
+        if 'error' in result:
+            return Response({
+                'error': result['error']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'success': True,
+            'operation': 'roll_up',
+            'result': result
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def olap_drilldown(request):
+    """
+    Operación Drill-down: Desagrega datos de un nivel general a uno más detallado
+
+    Body: {
+        "dimension": "materia",
+        "from_level": "departamento",
+        "to_level": "nombre_materia",
+        "measures": ["calificacion"],
+        "filters": {"dim_estudiante.genero": "Femenino"}
+    }
+    """
+    try:
+        from olap.mdx_engine import MDXEngine
+
+        data = request.data
+
+        required_fields = ['dimension', 'from_level', 'to_level', 'measures']
+        for field in required_fields:
+            if field not in data:
+                return Response({
+                    'error': f'Campo requerido: {field}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        mdx_engine = MDXEngine(connection)
+
+        result = mdx_engine.drill_down(
+            dimension=data['dimension'],
+            from_level=data['from_level'],
+            to_level=data['to_level'],
+            measures=data['measures'],
+            filters=data.get('filters')
+        )
+
+        if 'error' in result:
+            return Response({
+                'error': result['error']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'success': True,
+            'operation': 'drill_down',
+            'result': result
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def olap_slice(request):
+    """
+    Operación Slice: Fija una dimensión en un valor específico
+
+    Body: {
+        "fixed_dimension": "tiempo",
+        "fixed_value": "2024-1",
+        "row_dimensions": ["estudiante", "materia"],
+        "col_dimensions": ["docente"],
+        "measures": ["calificacion", "creditos_obtenidos"]
+    }
+    """
+    try:
+        from olap.mdx_engine import MDXEngine
+
+        data = request.data
+
+        required_fields = ['fixed_dimension', 'fixed_value', 'row_dimensions', 'measures']
+        for field in required_fields:
+            if field not in data:
+                return Response({
+                    'error': f'Campo requerido: {field}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        mdx_engine = MDXEngine(connection)
+
+        result = mdx_engine.slice_operation(
+            fixed_dimension=data['fixed_dimension'],
+            fixed_value=data['fixed_value'],
+            row_dimensions=data['row_dimensions'],
+            col_dimensions=data.get('col_dimensions', []),
+            measures=data['measures']
+        )
+
+        if 'error' in result:
+            return Response({
+                'error': result['error']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'success': True,
+            'operation': 'slice',
+            'result': result
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def olap_dice(request):
+    """
+    Operación Dice: Aplica múltiples filtros a varias dimensiones
+
+    Body: {
+        "filters": {
+            "dim_estudiante.genero": "Masculino",
+            "dim_tiempo.anio": "2024",
+            "dim_materia.departamento": "Matemáticas"
+        },
+        "row_dimensions": ["estudiante", "materia"],
+        "col_dimensions": ["docente"],
+        "measures": ["calificacion"]
+    }
+    """
+    try:
+        from olap.mdx_engine import MDXEngine
+
+        data = request.data
+
+        required_fields = ['filters', 'row_dimensions', 'measures']
+        for field in required_fields:
+            if field not in data:
+                return Response({
+                    'error': f'Campo requerido: {field}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        mdx_engine = MDXEngine(connection)
+
+        result = mdx_engine.dice_operation(
+            filters=data['filters'],
+            row_dimensions=data['row_dimensions'],
+            col_dimensions=data.get('col_dimensions', []),
+            measures=data['measures']
+        )
+
+        if 'error' in result:
+            return Response({
+                'error': result['error']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'success': True,
+            'operation': 'dice',
+            'result': result
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def olap_pivot(request):
+    """
+    Operación Pivot: Rota las dimensiones entre filas y columnas
+
+    Body: {
+        "current_rows": ["estudiante", "materia"],
+        "current_cols": ["docente"],
+        "new_rows": ["docente", "tiempo"],
+        "new_cols": ["estudiante"],
+        "measures": ["calificacion", "creditos_obtenidos"],
+        "filters": {"dim_tiempo.anio": "2024"}
+    }
+    """
+    try:
+        from olap.mdx_engine import MDXEngine
+
+        data = request.data
+
+        required_fields = ['new_rows', 'new_cols', 'measures']
+        for field in required_fields:
+            if field not in data:
+                return Response({
+                    'error': f'Campo requerido: {field}'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        mdx_engine = MDXEngine(connection)
+
+        result = mdx_engine.pivot_operation(
+            current_rows=data.get('current_rows', []),
+            current_cols=data.get('current_cols', []),
+            new_rows=data['new_rows'],
+            new_cols=data['new_cols'],
+            measures=data['measures'],
+            filters=data.get('filters')
+        )
+
+        if 'error' in result:
+            return Response({
+                'error': result['error']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'success': True,
+            'operation': 'pivot',
+            'result': result
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def olap_cube_schema(request):
+    """
+    Obtiene el esquema del cubo OLAP con dimensiones, medidas y jerarquías
+    """
+    try:
+        from olap.cube_schema import CubeSchema
+
+        cube_schema = CubeSchema()
+        schema = cube_schema.get_cube_definition()
+
+        return Response({
+            'success': True,
+            'cube_schema': schema,
+            'description': 'Esquema del cubo multidimensional académico'
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def olap_custom_mdx(request):
+    """
+    Ejecuta una consulta MDX personalizada
+
+    Body: {
+        "mdx_query": "SELECT {[Measures].[calificacion]} ON COLUMNS, {[estudiante].Members} ON ROWS FROM [cubo_academico]",
+        "sql_equivalent": "SELECT AVG(calificacion) FROM hechos_rendimiento_academico JOIN dim_estudiante..."
+    }
+    """
+    try:
+        data = request.data
+
+        if 'sql_equivalent' not in data:
+            return Response({
+                'error': 'Campo requerido: sql_equivalent'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ejecutar la consulta SQL equivalente
+        with connection.cursor() as cursor:
+            cursor.execute(data['sql_equivalent'])
+            results = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+
+        # Convertir resultados a diccionarios
+        data_results = []
+        for row in results:
+            data_results.append(dict(zip(columns, row)))
+
+        return Response({
+            'success': True,
+            'operation': 'custom_mdx',
+            'mdx_query': data.get('mdx_query', ''),
+            'sql_query': data['sql_equivalent'],
+            'result': {
+                'data': data_results,
+                'columns': columns,
+                'row_count': len(data_results)
+            }
+        })
+
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

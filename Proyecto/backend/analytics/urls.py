@@ -63,4 +63,29 @@ urlpatterns = [
     path('hechos/create/', views.HechosCreateView.as_view(), name='hechos-create'),
     path('hechos/<int:id_hecho>/', views.HechosUpdateView.as_view(), name='hechos-update'),
     path('hechos/<int:id_hecho>/delete/', views.delete_hecho, name='hechos-delete'),
+
+    # Endpoints para obtener valores únicos para autocomplete
+    path('get-generos/', views.get_generos, name='get-generos'),
+    path('get-semestres/', views.get_semestres, name='get-semestres'),
+    path('get-departamentos/', views.get_departamentos, name='get-departamentos'),
+    path('get-niveles-materia/', views.get_niveles_materia, name='get-niveles-materia'),
+    path('get-grados-academicos/', views.get_grados_academicos, name='get-grados-academicos'),
+    path('get-niveles-programa/', views.get_niveles_programa, name='get-niveles-programa'),
+    path('get-facultades/', views.get_facultades, name='get-facultades'),
+    path('get-coordinadores/', views.get_coordinadores, name='get-coordinadores'),
+
+    # =============================================================================
+    # RUTAS OLAP - CUBO MULTIDIMENSIONAL Y CONSULTAS MDX
+    # =============================================================================
+
+    # Operaciones básicas del cubo OLAP
+    path('olap/rollup/', views.olap_rollup, name='olap-rollup'),
+    path('olap/drilldown/', views.olap_drilldown, name='olap-drilldown'),
+    path('olap/slice/', views.olap_slice, name='olap-slice'),
+    path('olap/dice/', views.olap_dice, name='olap-dice'),
+    path('olap/pivot/', views.olap_pivot, name='olap-pivot'),
+
+    # Esquema del cubo y consultas personalizadas
+    path('olap/schema/', views.olap_cube_schema, name='olap-cube-schema'),
+    path('olap/custom-mdx/', views.olap_custom_mdx, name='olap-custom-mdx'),
 ]

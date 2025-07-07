@@ -535,7 +535,7 @@ function setupAutocomplete(fieldId, data, valueField, textField) {
             items.forEach(item => {
                 const option = document.createElement('div');
                 option.className = 'autocomplete-option';
-                option.textContent = item[textField];
+        option.textContent = item[textField];
                 option.dataset.value = item[valueField];
                 option.dataset.text = item[textField];
 
@@ -801,12 +801,12 @@ async function openCreateDimensionModal(dimensionName) {
         if (fieldType === 'autocomplete') {
             return generateAutocompleteField(`create_${field}`, config.labels[index], autocompleteType, required);
         } else {
-            return `
-                <div class="form-group">
-                    <label for="create_${field}">${config.labels[index]}</label>
+        return `
+            <div class="form-group">
+                <label for="create_${field}">${config.labels[index]}</label>
                     <input type="${fieldType}" id="create_${field}" name="${field}" ${required}>
-                </div>
-            `;
+            </div>
+        `;
         }
     }).join('');
 
@@ -913,12 +913,12 @@ async function openEditModal(dimensionName, recordId) {
                 if (fieldType === 'autocomplete') {
                     return generateAutocompleteField(`edit_${field}`, config.labels[index], autocompleteType, required, value);
                 } else {
-                    return `
-                        <div class="form-group">
-                            <label for="edit_${field}">${config.labels[index]}</label>
+                return `
+                    <div class="form-group">
+                        <label for="edit_${field}">${config.labels[index]}</label>
                             <input type="${fieldType}" id="edit_${field}" name="${field}" value="${value}" ${required}>
-                        </div>
-                    `;
+                    </div>
+                `;
                 }
             }).join('');
 
@@ -1471,7 +1471,7 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `
         <div class="toast-content">
             <i class="fas ${getToastIcon(type)}"></i>
-            <span>${message}</span>
+        <span>${message}</span>
         </div>
     `;
 

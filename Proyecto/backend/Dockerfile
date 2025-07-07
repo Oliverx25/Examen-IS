@@ -1,40 +1,36 @@
+# Usar una imagen base de Python 3.11 (compatible con MacOS y Windows)
 FROM python:3.11-slim
 
-# Configurar variables de entorno
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        postgresql-client \
-        build-essential \
-        libpq-dev \
-        netcat-traditional \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copiar archivos de dependencias
-COPY requirements.txt /app/
+COPY requirements.txt .
 
 # Instalar dependencias de Python
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código de la aplicación
-COPY . /app/
+# Crear usuario no-root para seguridad
+RUN adduser --disabled-password --gecos '' appuser
 
-# Crear directorio para archivos estáticos
-RUN mkdir -p /app/staticfiles
+# Copiar el código fuente
+COPY . .
 
-# Limpiar terminadores de línea Windows (\r) y dar permisos de ejecución
-RUN sed -i 's/\r$//' /app/init.sh \
-    && chmod +x /app/init.sh
+# Dar permisos al usuario
+RUN chown -R appuser:appuser /app
+USER appuser
 
-# Exponer puerto
+# Exponer el puerto
 EXPOSE 8000
 
-# Comando por defecto - usar bash explícitamente
-CMD ["bash", "/app/init.sh"]
+# Comando por defecto
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
