@@ -12,13 +12,9 @@ GRANT ALL PRIVILEGES ON DATABASE datawarehouse TO dw_user;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO dw_user;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO dw_user;
 
--- Configuraciones adicionales para optimización OLAP
-SET shared_preload_libraries = 'pg_stat_statements';
-SET max_connections = 200;
-SET shared_buffers = '256MB';
-SET effective_cache_size = '1GB';
-SET work_mem = '16MB';
-SET maintenance_work_mem = '64MB';
+-- Nota: parámetros como shared_preload_libraries, max_connections y shared_buffers
+-- requieren reinicio del servidor y deben configurarse en postgresql.conf,
+-- no en scripts de inicialización.
 
 -- Crear índices adicionales para optimización OLAP
 -- (Estos se ejecutarán después de que Django cree las tablas)

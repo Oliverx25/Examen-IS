@@ -1,14 +1,30 @@
 #!/bin/bash
+set -e
 
 echo "Esperando a que PostgreSQL esté listo..."
-while ! pg_isready -h db -p 5432 -U postgres; do
+while ! pg_isready -h db -p 5432 -U dw_user -d datawarehouse; do
     sleep 1
 done
 echo "PostgreSQL está listo!"
 
-echo "Ejecutando migraciones..."
+echo "Ejecutando migraciones de Django..."
 python manage.py makemigrations
 python manage.py migrate
+
+echo "Verificando esquema del Data Warehouse..."
+TABLE_EXISTS=$(python manage.py shell -c "
+from django.db import connection
+with connection.cursor() as c:
+    c.execute(\"SELECT to_regclass('public.dim_estudiante')\")
+    print(c.fetchone()[0] or '')
+" 2>/dev/null | tail -1 | tr -d '\r\n')
+
+if [ -z "$TABLE_EXISTS" ]; then
+    echo "Creando tablas del Data Warehouse..."
+    PGPASSWORD=dw_password psql -h db -U dw_user -d datawarehouse -f /database/scripts/01_create_schema.sql
+else
+    echo "Esquema del Data Warehouse ya existe."
+fi
 
 echo "Verificando si ya existen suficientes datos..."
 RECORD_COUNT=$(python manage.py shell -c "
@@ -36,6 +52,9 @@ if not User.objects.filter(username='admin').exists():
 else:
     print('Superusuario ya existe')
 "
+
+echo "Recopilando archivos estáticos..."
+python manage.py collectstatic --noinput
 
 echo "Iniciando servidor Django..."
 python manage.py runserver 0.0.0.0:8000

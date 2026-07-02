@@ -22,6 +22,7 @@ pytest-django==4.7.0
 
 # Utilidades adicionales
 requests==2.31.0
+Faker==24.4.0
 
 # Dependencias adicionales para el proyecto
 Pillow==10.1.0
